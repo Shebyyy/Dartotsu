@@ -4,7 +4,7 @@
 
 <p align="center">
    <img src="https://img.shields.io/badge/platforms-android_ios_windows_linux_macos-06599d?style=for-the-badge&labelColor=043b69&color=00b16a"/>
-   <a href="https://github.com/aayush2622/Dartotsu/releases"><img src="https://img.shields.io/github/downloads/aayush2622/Dartotsu/total?label=Downloads&color=00b16a&logo=android&logoColor=1a8fa6&style=for-the-badge&labelColor=043b69"></a>
+   <a href="https://img.shields.io/github/v/release/aayush2622/Dartotsu"><img src="https://img.shields.io/github/downloads/aayush2622/Dartotsu/total?label=Downloads&color=00b16a&logo=android&logoColor=1a8fa6&style=for-the-badge&labelColor=043b69"></a>
 </p>
 
 <p align="center">
