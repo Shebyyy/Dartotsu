@@ -1,0 +1,131 @@
+name: Dantotsu Build Workflow (Test)
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build_android:
+    runs-on: ubuntu-latest
+    if: contains(github.event.head_commit.message, '[build.apk]') || contains(github.event.head_commit.message, '[build]')
+    outputs:
+      apk_link: ${{steps.gdriveUpload.outputs.web-content-link}}
+    
+    permissions:
+      contents: write
+      pull-requests: read
+      actions: read
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Cache Flutter dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+            build/
+            .dart_tool/
+          key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-flutter-
+
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'oracle'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.24.1
+          cache: true
+
+      - name: Configure Gradle
+        run: |
+          mkdir -p ~/.gradle
+          echo "org.gradle.daemon=true" >> ~/.gradle/gradle.properties
+          echo "org.gradle.parallel=true" >> ~/.gradle/gradle.properties
+          echo "org.gradle.caching=true" >> ~/.gradle/gradle.properties
+
+      - run: flutter pub get
+      - run: flutter build apk --release --split-debug-info --shrink
+
+      - name: Upload to Telegram
+        run: |
+          curl -F "chat_id=${{ secrets.TELEGRAM_CHANNEL_ID }}" \
+               -F "document=@build/app/outputs/flutter-apk/app-release.apk" \
+               -F "caption=Android Build Successful! 🎉" \
+               https://api.telegram.org/bot${{secrets.TELEGRAM_BOT_TOKEN}}/sendDocument
+
+  build_windows:
+    runs-on: windows-latest
+    if: contains(github.event.head_commit.message, '[build.windows]') || contains(github.event.head_commit.message, '[build]')
+    outputs:
+      zip_link: ${{steps.gdriveUpload.outputs.web-content-link}}
+    
+    permissions:
+      contents: write
+      pull-requests: write
+      repository-projects: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Cache Flutter dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            C:\hostedtoolcache\windows\flutter
+            ~\AppData\Local\Pub\Cache
+            build\
+            .dart_tool\
+          key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-flutter-
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.24.1
+          cache: true
+
+      - name: Enable Windows desktop support
+        run: flutter config --enable-windows-desktop
+
+      - run: flutter pub get
+      - run: flutter build windows --release
+
+      - name: Archive App
+        uses: thedoctor0/zip-release@master
+        with:
+          type: 'zip'
+          filename: Dantotsu_Windows_${{github.ref_name}}.zip
+          directory: build\windows\x64\runner\Release
+
+      - name: List Release Directory
+        run: dir build\windows\x64\runner\Release
+
+      - name: Upload to Telegram
+        run: |
+          curl -F "chat_id=${{ secrets.TELEGRAM_CHANNEL_ID }}" \
+               -F "document=@Dantotsu_Windows_${{github.ref_name}}.zip" \
+               -F "caption=Windows Build Successful! 🎉" \
+               https://api.telegram.org/bot${{secrets.TELEGRAM_BOT_TOKEN}}/sendDocument
