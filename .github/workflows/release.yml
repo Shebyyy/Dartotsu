@@ -72,8 +72,7 @@ jobs:
           fi
           done
 
-          # Removed the version tag section
-          # echo "### ${GITHUB_REF#refs/tags/}" >> CHANGELOG.md  # No version tag added
+          echo "" >> CHANGELOG.md  # No version tag added
 
           if [ -n "$FEATURES" ]; then
           echo "### 🎉 New Features" >> CHANGELOG.md
