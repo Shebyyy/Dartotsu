@@ -81,18 +81,24 @@ jobs:
             git push origin main
           fi
 
-      # Step 4: Create or Update Release
+    # Step 4: Set Tag Variable
+      - name: Set Tag Variable
+        id: tag
+        run: |
+          echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+
+      # Step 5: Create or Update Release
       - name: Create or Update Release
         uses: ncipollo/release-action@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           bodyFile: CHANGELOG.md
-          tag: ${{ github.ref#refs/tags/ }}  # Correct the tag reference
+          tag: ${{ env.TAG }}  # Use the tag from the environment variable
           allowUpdates: true
           
   build_android:
     runs-on: ubuntu-latest
-    
+    needs: generate-changelog
     permissions:
       contents: write
       pull-requests: write
@@ -118,6 +124,7 @@ jobs:
             files: build/app/outputs/flutter-apk/Dantotsu_Android_${{github.ref_name}}.apk
   build_windows:
     runs-on: windows-latest
+    needs: generate-changelog
     permissions: 
         contents: write
         pull-requests: write
@@ -146,6 +153,7 @@ jobs:
     
   build_linux:
     runs-on: ubuntu-latest
+    needs: generate-changelog
     permissions: 
         contents: write
         pull-requests: write
@@ -174,6 +182,7 @@ jobs:
             files: build/linux/x64/release/bundle/Dantotsu_Linux_${{github.ref_name}}.zip
   build_ios_and_macos:
     runs-on: macos-latest
+    needs: generate-changelog
     permissions: 
         contents: write
         pull-requests: write
