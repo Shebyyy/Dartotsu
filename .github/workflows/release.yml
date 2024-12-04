@@ -97,16 +97,8 @@ jobs:
       # Clear existing CHANGELOG.md
       - name: Clear CHANGELOG.md
         run: |
-          echo "# Changelog" > CHANGELOG.md
+          echo ""> CHANGELOG.md
           echo "" >> CHANGELOG.md
-
-       # Generate the new changelog for the current release
-      - name: Generate changelog for new release
-        run: |
-          echo "## ${GITHUB_REF#refs/tags/} - $(date +'%Y-%m-%d')" >> CHANGELOG.md
-          echo "" >> CHANGELOG.md
-          # Add commit logs between the previous tag and the current release
-          git log ${PREVIOUS_TAG}..HEAD --pretty=format:'* %h %s' >> CHANGELOG.md   
           
       - name: Commit and push changelog
         run: |
