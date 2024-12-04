@@ -94,6 +94,12 @@ jobs:
             echo -e "$CHORES" >> CHANGELOG.md
           fi
 
+      # Clear existing CHANGELOG.md
+      - name: Clear CHANGELOG.md
+        run: |
+          echo "# Changelog" > CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          
       - name: Commit and push changelog
         run: |
           git config --global user.name "GitHub Actions"
