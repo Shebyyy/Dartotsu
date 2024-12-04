@@ -119,7 +119,7 @@ jobs:
           tag: ${{ env.TAG }}  # Use the tag from the environment variable
           allowUpdates: true
           
-  build_android:
+build_android:
     runs-on: ubuntu-latest
     needs: generate-changelog
     permissions:
