@@ -1,7 +1,3 @@
-## v0.1.1
-
-## v0.1.2
-
 ### 🎉 New Features
 * [f1f8c88](https://github.com/Shebyyy/Dartotsu/commit/f1f8c88): feat: Update release.yml
 * [7c40dea](https://github.com/Shebyyy/Dartotsu/commit/7c40dea): feat: Update release.yml
