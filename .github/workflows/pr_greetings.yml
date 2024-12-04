@@ -1,4 +1,4 @@
-name: PR Greetings
+name: PR Greetings 
 
 on:
   pull_request:
