@@ -1,5 +1,5 @@
 
 
 ### 🎉 New Features
-* [cc9e7df](https://github.com/Shebyyy/Dartotsu/commit/cc9e7df): feat: Update release.yml
+* [7d6a68e](https://github.com/Shebyyy/Dartotsu/commit/7d6a68e): feat: Update release.yml
 
