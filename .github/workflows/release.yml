@@ -5,81 +5,104 @@ on:
       - "v*.*.*"
 
 jobs:
-  generate-changelog:
+   generate-changelog:
     runs-on: ubuntu-latest
     steps:
-      # Step 1: Checkout the Code
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      # Step 2: Generate the Changelog
-      - name: Generate Changelog
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+      - name: Get previous tag
+        id: get_prev_tag
         run: |
-          #!/bin/bash
-
-          # Determine Previous and Current Tags
-          PREVIOUS_TAG=$(git tag --sort=-v:refname | grep -vE '(-alpha|-beta|-rc)' | head -n 2 | tail -n 1)
-          CURRENT_TAG=${GITHUB_REF#refs/tags/}
-          if [ -z "$PREVIOUS_TAG" ]; then
-            PREVIOUS_TAG=$(git rev-list --max-parents=0 HEAD)
+          echo "Getting the previous tag..."
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          echo "Previous tag retrieved: $PREV_TAG"
+          if [ -z "$PREV_TAG" ]; then
+            echo "No previous tag found, using the initial commit."
+            PREV_TAG=$(git rev-list --max-parents=0 HEAD)
           fi
-          if [ -z "$CURRENT_TAG" ]; then
-            echo "Error: CURRENT_TAG is empty. Exiting..."
-            exit 1
-          fi
+          echo "prev_tag=$PREV_TAG" >> $GITHUB_ENV
+          echo "Previous tag: $PREV_TAG"
+          
+      - name: Get commit messages between tags
+        id: get_commits
+        run: |
+          echo "Getting commit messages between tags..."
+          COMMITS=$(git log ${{ env.prev_tag }}..HEAD --pretty=format:'%h %s' | tr '\n' '|')
+          echo "Commits retrieved: $COMMITS"
+          echo "commits=$COMMITS" >> $GITHUB_ENV
+      - name: Categorize commits
+        id: categorize
+        run: |
+          echo "Categorizing commits..."
+          FEATURES=""
+          BUG_FIXES=""
+          REFACTORS=""
+          STYLE_CHANGES=""
+          PERFORMANCE=""
+          CHORES=""
+          REPO_URL="https://github.com/${{ github.repository }}"
+    
+          IFS='|' read -ra COMMIT_LIST <<< "${{ env.commits }}"
+          echo "Commit list: ${COMMIT_LIST[@]}"
+          for LINE in "${COMMIT_LIST[@]}"; do
+            HASH=$(echo "$LINE" | awk '{print $1}')
+            MESSAGE=$(echo "$LINE" | cut -d' ' -f2-)
+            LINK="[$HASH]($REPO_URL/commit/$HASH)"
 
-          echo "Generating changelog from $PREVIOUS_TAG to $CURRENT_TAG"
-
-          # Initialize changelog (no tag at the top)
-          TEMP_FILE=$(mktemp)
-
-          # Function to add section if commits exist
-          add_section() {
-            local section_title="$1"
-            local grep_pattern="$2"
-            local commits=$(git log $PREVIOUS_TAG..$CURRENT_TAG --grep="$grep_pattern" --pretty=format:'* [`%h`](https://github.com/Shebyyy/Dartotsu/commit/%h): %s')
-
-            if [ ! -z "$commits" ]; then
-              echo "### $section_title" >> $TEMP_FILE
-              echo "$commits" >> $TEMP_FILE
-              echo "" >> $TEMP_FILE
+            FORMATTED_COMMIT="* $LINK: $MESSAGE"
+            echo "Processing commit: $FORMATTED_COMMIT"
+            if [[ $MESSAGE == feat* ]]; then
+              FEATURES+="$FORMATTED_COMMIT\n"
+            elif [[ $MESSAGE == fix* || $MESSAGE == bug* || $MESSAGE == improvement* || $MESSAGE == patch* ]]; then
+              BUG_FIXES+="$FORMATTED_COMMIT\n"
+            elif [[ $MESSAGE == refactor* ]]; then
+              REFACTORS+="$FORMATTED_COMMIT\n"
+            elif [[ $MESSAGE == style* ]]; then
+              STYLE_CHANGES+="$FORMATTED_COMMIT\n"
+            elif [[ $MESSAGE == perf* ]]; then
+              PERFORMANCE+="$FORMATTED_COMMIT\n"
+            elif [[ $MESSAGE == chore* || $MESSAGE == docs* || $MESSAGE == build* || $MESSAGE == ci* ]]; then
+              CHORES+="$FORMATTED_COMMIT\n"
             fi
-          }
+          done
 
-          # Add sections dynamically
-          add_section "🎉 New Features" "^feat:"
-          add_section "🛠️ Bug Fixes & Improvements" "^fix:"
-          add_section "🔧 Refactors" "^refactor:"
-          add_section "🎨 Style Changes" "^style:"
-          add_section "🚀 Performance Improvements" "^perf:"
-          add_section "🧹 Chores & Documentation" "^(chore|docs):"
-
-          # Append to existing CHANGELOG.md while preserving history
-          if [ -f CHANGELOG.md ]; then
-            cat CHANGELOG.md >> $TEMP_FILE
+          if [ -n "$FEATURES" ]; then
+            echo "### 🎉 New Features" >> CHANGELOG.md
+            echo -e "$FEATURES" >> CHANGELOG.md
           fi
-          mv $TEMP_FILE CHANGELOG.md
+          if [ -n "$BUG_FIXES" ]; then
+            echo "### 🛠️ Bug Fixes & Improvements" >> CHANGELOG.md
+            echo -e "$BUG_FIXES" >> CHANGELOG.md
+          fi
+          if [ -n "$REFACTORS" ]; then
+            echo "### 🔧 Refactors" >> CHANGELOG.md
+            echo -e "$REFACTORS" >> CHANGELOG.md
+          fi
+          if [ -n "$STYLE_CHANGES" ]; then
+            echo "### 🎨 Style Changes" >> CHANGELOG.md
+            echo -e "$STYLE_CHANGES" >> CHANGELOG.md
+          fi
+          if [ -n "$PERFORMANCE" ]; then
+            echo "### 🚀 Performance Improvements" >> CHANGELOG.md
+            echo -e "$PERFORMANCE" >> CHANGELOG.md
+          fi
+          if [ -n "$CHORES" ]; then
+            echo "### 🧹 Chores & Documentation" >> CHANGELOG.md
+            echo -e "$CHORES" >> CHANGELOG.md
+          fi
 
-          # Output the generated changelog for debugging
-          cat CHANGELOG.md
-
-      # Step 3: Commit and Push the Changelog
-      - name: Commit and Push Changelog
+      - name: Commit and push changelog
         run: |
-          if git diff --quiet CHANGELOG.md; then
-            echo "No changes in CHANGELOG.md. Skipping commit."
-          else
-            echo "Committing and pushing changelog..."
-            git config --global user.name "GitHub Actions"
-            git config --global user.email "actions@github.com"
-            git add CHANGELOG.md
-            git commit -m "Update changelog for version $CURRENT_TAG"
-            git push origin main
-          fi
+          echo "Committing and pushing changelog..."
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add CHANGELOG.md
+          git commit -m "Update changelog for version ${{ github.ref_name }}"
+          git push origin HEAD:main
+
 
     # Step 4: Set Tag Variable
       - name: Set Tag Variable
