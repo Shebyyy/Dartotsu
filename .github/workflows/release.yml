@@ -30,8 +30,10 @@ jobs:
           COMMITS=$(git log ${{ env.prev_tag }}..HEAD --pretty=format:'%h %s' | tr '\n' '|')
           echo "commits=$COMMITS" >> $GITHUB_ENV
 
-      - name: Categorize commits and generate changelog
+      - name: Categorize commits
+        id: categorize
         run: |
+          echo "Categorizing commits..."
           FEATURES=""
           BUG_FIXES=""
           REFACTORS=""
@@ -39,32 +41,58 @@ jobs:
           PERFORMANCE=""
           CHORES=""
           REPO_URL="https://github.com/${{ github.repository }}"
-
+    
           IFS='|' read -ra COMMIT_LIST <<< "${{ env.commits }}"
+          echo "Commit list: ${COMMIT_LIST[@]}"
           for LINE in "${COMMIT_LIST[@]}"; do
-            HASH=$(echo "$LINE" | awk '{print $1}')
-            MESSAGE=$(echo "$LINE" | cut -d' ' -f2-)
-            LINK="[$HASH]($REPO_URL/commit/$HASH)"
+          HASH=$(echo "$LINE" | awk '{print $1}')
+          MESSAGE=$(echo "$LINE" | cut -d' ' -f2-)
+          LINK="[$HASH]($REPO_URL/commit/$HASH)"
 
-            if [[ $MESSAGE == feat* ]]; then
-              FEATURES+="* $LINK: $MESSAGE\n"
-            elif [[ $MESSAGE == fix* || $MESSAGE == bug* || $MESSAGE == improvement* || $MESSAGE == patch* ]]; then
-              BUG_FIXES+="* $LINK: $MESSAGE\n"
-            elif [[ $MESSAGE == refactor* ]]; then
-              REFACTORS+="* $LINK: $MESSAGE\n"
-            elif [[ $MESSAGE == style* ]]; then
-              STYLE_CHANGES+="* $LINK: $MESSAGE\n"
-            elif [[ $MESSAGE == perf* ]]; then
-              PERFORMANCE+="* $LINK: $MESSAGE\n"
-            elif [[ $MESSAGE == chore* || $MESSAGE == docs* || $MESSAGE == build* || $MESSAGE == ci* ]]; then
-              CHORES+="* $LINK: $MESSAGE\n"
-            fi
+          FORMATTED_COMMIT="* $LINK: $MESSAGE"
+          echo "Processing commit: $FORMATTED_COMMIT"
+          if [[ $MESSAGE == feat* ]]; then
+           FEATURES+="$FORMATTED_COMMIT\n"
+          elif [[ $MESSAGE == fix* || $MESSAGE == bug* || $MESSAGE == improvement* || $MESSAGE == patch* ]]; then
+          BUG_FIXES+="$FORMATTED_COMMIT\n"
+          elif [[ $MESSAGE == refactor* ]]; then
+          REFACTORS+="$FORMATTED_COMMIT\n"
+          elif [[ $MESSAGE == style* ]]; then
+          STYLE_CHANGES+="$FORMATTED_COMMIT\n"
+          elif [[ $MESSAGE == perf* ]]; then
+          PERFORMANCE+="$FORMATTED_COMMIT\n"
+          elif [[ $MESSAGE == chore* || $MESSAGE == docs* || $MESSAGE == build* || $MESSAGE == ci* ]]; then
+          CHORES+="$FORMATTED_COMMIT\n"
+          fi
           done
 
+          # Removed the version tag section
+          # echo "### ${GITHUB_REF#refs/tags/}" >> CHANGELOG.md  # No version tag added
+
+          if [ -n "$FEATURES" ]; then
           echo "### 🎉 New Features" >> CHANGELOG.md
           echo -e "$FEATURES" >> CHANGELOG.md
+          fi
+          if [ -n "$BUG_FIXES" ]; then
           echo "### 🛠️ Bug Fixes & Improvements" >> CHANGELOG.md
           echo -e "$BUG_FIXES" >> CHANGELOG.md
+          fi
+          if [ -n "$REFACTORS" ]; then
+          echo "### 🔧 Refactors" >> CHANGELOG.md
+          echo -e "$REFACTORS" >> CHANGELOG.md
+          fi
+          if [ -n "$STYLE_CHANGES" ]; then
+          echo "### 🎨 Style Changes" >> CHANGELOG.md
+          echo -e "$STYLE_CHANGES" >> CHANGELOG.md
+          fi
+          if [ -n "$PERFORMANCE" ]; then
+          echo "### 🚀 Performance Improvements" >> CHANGELOG.md
+            echo -e "$PERFORMANCE" >> CHANGELOG.md
+          fi
+          if [ -n "$CHORES" ]; then
+            echo "### 🧹 Chores & Documentation" >> CHANGELOG.md
+            echo -e "$CHORES" >> CHANGELOG.md
+          fi
 
       - name: Commit and push changelog
         run: |
