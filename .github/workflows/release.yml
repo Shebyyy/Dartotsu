@@ -3,39 +3,55 @@ on:
   push:
     tags: 
       - "v*.*.*"
-
+      
 jobs:
   generate-changelog:
     runs-on: ubuntu-latest
     steps:
+      # Step 1: Checkout the Code
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      # Step 2: Generate the Changelog
       - name: Generate Changelog
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           #!/bin/bash
+
+          # Determine Previous and Current Tags
           PREVIOUS_TAG=$(git tag --sort=-v:refname | grep -vE '(-alpha|-beta|-rc)' | head -n 2 | tail -n 1)
           CURRENT_TAG=${GITHUB_REF#refs/tags/}
           if [ -z "$PREVIOUS_TAG" ]; then
             PREVIOUS_TAG=$(git rev-list --max-parents=0 HEAD)
           fi
+          if [ -z "$CURRENT_TAG" ]; then
+            echo "Error: CURRENT_TAG is empty. Exiting..."
+            exit 1
+          fi
+
+          echo "Generating changelog from $PREVIOUS_TAG to $CURRENT_TAG"
+
           # Initialize changelog with the current tag as the version
-          echo "## $CURRENT_TAG" >> CHANGELOG.md
-          echo "" >> CHANGELOG.md
+          TEMP_FILE=$(mktemp)
+          echo "## $CURRENT_TAG" > $TEMP_FILE
+          echo "" >> $TEMP_FILE
+
           # Function to add section if commits exist
           add_section() {
             local section_title="$1"
             local grep_pattern="$2"
             local commits=$(git log $PREVIOUS_TAG..$CURRENT_TAG --grep="$grep_pattern" --pretty=format:'* [`%h`](https://github.com/Shebyyy/Dartotsu/commit/%h): %s')
-            
+
             if [ ! -z "$commits" ]; then
-              echo "$commits" >> CHANGELOG.md
-              echo "" >> CHANGELOG.md
+              echo "### $section_title" >> $TEMP_FILE
+              echo "$commits" >> $TEMP_FILE
+              echo "" >> $TEMP_FILE
             fi
           }
+
           # Add sections dynamically
           add_section "🎉 New Features" "^feat:"
           add_section "🛠️ Bug Fixes & Improvements" "^fix:"
@@ -43,26 +59,39 @@ jobs:
           add_section "🎨 Style Changes" "^style:"
           add_section "🚀 Performance Improvements" "^perf:"
           add_section "🧹 Chores & Documentation" "^(chore|docs):"
-          # Output the generated changelog
+
+          # Append to existing CHANGELOG.md while preserving history
+          if [ -f CHANGELOG.md ]; then
+            cat CHANGELOG.md >> $TEMP_FILE
+          fi
+          mv $TEMP_FILE CHANGELOG.md
+
+          # Output the generated changelog for debugging
           cat CHANGELOG.md
 
-      - name: Commit and push changelog
+      # Step 3: Commit and Push the Changelog
+      - name: Commit and Push Changelog
         run: |
-          echo "Committing and pushing changelog..."
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
-          git add CHANGELOG.md
-          git commit -m "Update changelog for version ${{ github.ref_name }}"
-          git push origin HEAD:main
-          
-      # Step 4: Run release action with the latest tag
+          if git diff --quiet CHANGELOG.md; then
+            echo "No changes in CHANGELOG.md. Skipping commit."
+          else
+            echo "Committing and pushing changelog..."
+            git config --global user.name "GitHub Actions"
+            git config --global user.email "actions@github.com"
+            git add CHANGELOG.md
+            git commit -m "Update changelog for version $CURRENT_TAG"
+            git push origin main
+          fi
+
+      # Step 4: Create or Update Release
       - name: Create or Update Release
         uses: ncipollo/release-action@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           bodyFile: CHANGELOG.md
-          tag: ${{ env.latest_tag }} # Use the latest tag
+          tag: ${{ github.ref#refs/tags/ }}  # Correct the tag reference
           allowUpdates: true
+
           
   build_android:
     runs-on: ubuntu-latest
