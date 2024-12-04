@@ -39,3 +39,6 @@
 * [1fd8a4c](https://github.com/Shebyyy/Dartotsu/commit/1fd8a4c): feat: Update release.yml
 * [a595dbb](https://github.com/Shebyyy/Dartotsu/commit/a595dbb): feat: Update release.yml
 
+### 🎉 New Features
+* [d45529e](https://github.com/Shebyyy/Dartotsu/commit/d45529e): feat: testing
+
