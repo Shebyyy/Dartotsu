@@ -3,7 +3,7 @@ on:
   push:
     tags: 
       - "v*.*.*"
-      
+
 jobs:
   generate-changelog:
     runs-on: ubuntu-latest
@@ -34,10 +34,8 @@ jobs:
 
           echo "Generating changelog from $PREVIOUS_TAG to $CURRENT_TAG"
 
-          # Initialize changelog with the current tag as the version
+          # Initialize changelog (no tag at the top)
           TEMP_FILE=$(mktemp)
-          echo "## $CURRENT_TAG" > $TEMP_FILE
-          echo "" >> $TEMP_FILE
 
           # Function to add section if commits exist
           add_section() {
@@ -91,7 +89,6 @@ jobs:
           bodyFile: CHANGELOG.md
           tag: ${{ github.ref#refs/tags/ }}  # Correct the tag reference
           allowUpdates: true
-
           
   build_android:
     runs-on: ubuntu-latest
