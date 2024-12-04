@@ -34,3 +34,8 @@
 * [b4acb0e](https://github.com/Shebyyy/Dartotsu/commit/b4acb0e): fix
 * [ded3f2b](https://github.com/Shebyyy/Dartotsu/commit/ded3f2b): fixes here and there
 
+### 🎉 New Features
+* [152de7d](https://github.com/Shebyyy/Dartotsu/commit/152de7d): feat: Update CHANGELOG.md
+* [1fd8a4c](https://github.com/Shebyyy/Dartotsu/commit/1fd8a4c): feat: Update release.yml
+* [a595dbb](https://github.com/Shebyyy/Dartotsu/commit/a595dbb): feat: Update release.yml
+
