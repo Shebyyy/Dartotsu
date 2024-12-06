@@ -532,11 +532,24 @@ jobs:
          APK_DOWNLOAD_LINK="${{ needs.build_android.outputs.apk_link }}"
           WINDOWS_DOWNLOAD_LINK="${{ needs.build_windows.outputs.zip_link }}"
           LINUX_DOWNLOAD_LINK="${{ needs.build_linux.outputs.zip_link }}"
-
-          # Function to get file size in human-readable format
+        
+          # Function to get file size in human-readable format for direct links
           get_file_size() {
-          local URL=$1
-          local SIZE=$(curl -sI "$URL" | grep -i Content-Length | awk '{print $2}' | tr -d '\r')
+           local URL=$1
+            local SIZE=$(curl -sI "$URL" | grep -i Content-Length | awk '{print $2}' | tr -d '\r')
+            if [ -z "$SIZE" ]; then
+            echo "Unknown"
+            else
+            echo $(numfmt --to=iec-i --suffix=B $SIZE)
+            fi
+            }
+  
+          # Google Drive workaround for file size check
+          get_google_drive_size() {
+          local FILE_ID=$1
+          local URL="https://drive.google.com/uc?export=download&id=${FILE_ID}"
+          local REDIRECT_URL=$(curl -sL -w "%{url_effective}" -o /dev/null "$URL")
+          local SIZE=$(curl -sI "$REDIRECT_URL" | grep -i Content-Length | awk '{print $2}' | tr -d '\r')
           if [ -z "$SIZE" ]; then
           echo "Unknown"
           else
