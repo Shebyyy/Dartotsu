@@ -57,12 +57,14 @@ jobs:
 
           # Download the keystore file (from GitHub Secrets or other storage)
       - name: Download keystore
+        if: false
         env:
           KEYSTORE_BASE64: ${{ secrets.APK_SIGN }}
         run: echo "$KEYSTORE_BASE64" | base64 --decode > android/app/dartotsu.jks
 
       # Set up environment variables for signing
       - name: Set up signing variables
+        if: false
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
@@ -94,7 +96,7 @@ jobs:
         with:
           file-path: build/app/outputs/flutter-apk/Dantotsu_Android_${{github.ref_name}}.apk
           upload-name: Dartotsu.apk
-          upload-to-folder-id: 1nWYex54zd58SVitJUCva91_4k1PPTdP3
+          upload-to-folder-id: 1_BIXdURNlwRfVQJJB142TI1J7jVf69-2
           service-account-json: "${{secrets.GOOGLE_KEY}}"
           overrwrite: true
 
@@ -164,7 +166,7 @@ jobs:
         with:
           file-path: build/windows/x64/runner/Release/Dantotsu_Windows_${{github.ref_name}}.zip
           upload-name: Dartotsu_windows.zip
-          upload-to-folder-id: 1nWYex54zd58SVitJUCva91_4k1PPTdP3
+          upload-to-folder-id: 1_BIXdURNlwRfVQJJB142TI1J7jVf69-2
           service-account-json: "${{secrets.GOOGLE_KEY}}"
           overrwrite: true
   build_linux:
@@ -234,7 +236,7 @@ jobs:
         with:
           file-path: build/linux/x64/release/bundle/Dantotsu_Linux_${{github.ref_name}}.zip
           upload-name: Dartotsu_linux.zip
-          upload-to-folder-id: 1nWYex54zd58SVitJUCva91_4k1PPTdP3
+          upload-to-folder-id: 1_BIXdURNlwRfVQJJB142TI1J7jVf69-2
           service-account-json: "${{secrets.GOOGLE_KEY}}"
           overrwrite: true
 
@@ -522,6 +524,39 @@ jobs:
         with:
             name: last-sha
             path: last_sha.txt
+
+      - name: Get File Sizes
+        id: get_file_sizes
+        run: |
+          APK_DOWNLOAD_LINK: ${{ needs.build_android.outputs.apk_link }}
+          WINDOWS_DOWNLOAD_LINK: ${{ needs.build_windows.outputs.zip_link }}
+          LINUX_DOWNLOAD_LINK: ${{needs.build_linux.outputs.zip_link}}
+
+          # Function to get file size in human-readable format
+          get_file_size() {
+           local URL=$1
+          local SIZE=$(curl -sI $URL | grep -i Content-Length | awk '{print $2}' | tr -d '\r')
+          if [ -z "$SIZE" ]; then
+            echo "Unknown"
+          else
+          echo $(numfmt --to=iec-i --suffix=B $SIZE)
+          fi
+          }
+  
+          # Get sizes
+          WINDOWS_SIZE=$(get_file_size $WINDOWS_DOWNLOAD_LINK)
+          LINUX_SIZE=$(get_file_size $LINUX_DOWNLOAD_LINK)
+          APK_SIZE=$(get_file_size $APK_DOWNLOAD_LINK)
+
+          echo "Windows file size: $WINDOWS_SIZE"
+          echo "Linux file size: $LINUX_SIZE"
+          echo "APK file size: $APK_SIZE"
+
+          # Set environment variables
+          echo "WINDOWS_SIZE=$WINDOWS_SIZE" >> $GITHUB_ENV
+          echo "LINUX_SIZE=$LINUX_SIZE" >> $GITHUB_ENV
+           echo "APK_SIZE=$APK_SIZE" >> $GITHUB_ENV
+
       - name: Send Discord Notification with Download Links
         env:
           APK_DOWNLOAD_LINK: ${{ needs.build_android.outputs.apk_link }}
@@ -530,21 +565,21 @@ jobs:
         run: |
           # Check if APK_DOWNLOAD_LINK is not empty
           if [[ -n "$APK_DOWNLOAD_LINK" ]]; then
-            APK_MESSAGE="[Download APK]($APK_DOWNLOAD_LINK)"
+            APK_MESSAGE="[Download APK]($APK_DOWNLOAD_LINK) $APK_SIZE"
           else
             APK_MESSAGE="No APK link available"
           fi
       
           # Check if WINDOWS_DOWNLOAD_LINK is not empty
           if [[ -n "$WINDOWS_DOWNLOAD_LINK" ]]; then
-            WINDOWS_MESSAGE="[Download Windows ZIP]($WINDOWS_DOWNLOAD_LINK)"
+            WINDOWS_MESSAGE="[Download Windows ZIP]($WINDOWS_DOWNLOAD_LINK) $WINDOWS_SIZE"
           else
             WINDOWS_MESSAGE="No Windows link available"
           fi
 
           # Check if LINUX_DOWNLOAD_LINK is not empty
           if [[ -n "$LINUX_DOWNLOAD_LINK" ]]; then
-            LINUX_MESSAGE="[Download LINUX ZIP]($LINUX_DOWNLOAD_LINK)"
+            LINUX_MESSAGE="[Download LINUX ZIP]($LINUX_DOWNLOAD_LINK) $LINUX_SIZE"
           else
             LINUX_MESSAGE="No LINUX link available"
           fi
@@ -560,7 +595,7 @@ jobs:
       - name: Send Telegram Notification
         run: |
             response=$(curl -sS -f -X POST \
-                "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKKEN}}/sendMessage" \
+                "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN}}/sendMessage" \
                 -F "chat_id=${{ secrets.TELEGRAM_CHANNEL_ID}}" \
                 -F "message_thread_id=${{secrets.TELEGRAM_THREAD_ID}}" \
                 -F parse_mode="Markdown" \
