@@ -529,20 +529,45 @@ jobs:
       - name: Get File Sizes
         id: get_file_sizes
         run: |
-          APK_DOWNLOAD_LINK: ${{ needs.build_android.outputs.apk_link }}
-          WINDOWS_DOWNLOAD_LINK: ${{ needs.build_windows.outputs.zip_link }}
-          LINUX_DOWNLOAD_LINK: ${{needs.build_linux.outputs.zip_link}}
+         APK_DOWNLOAD_LINK="${{ needs.build_android.outputs.apk_link }}"
+          WINDOWS_DOWNLOAD_LINK="${{ needs.build_windows.outputs.zip_link }}"
+          LINUX_DOWNLOAD_LINK="${{ needs.build_linux.outputs.zip_link }}"
 
           # Function to get file size in human-readable format
           get_file_size() {
-           local URL=$1
-          local SIZE=$(curl -sI $URL | grep -i Content-Length | awk '{print $2}' | tr -d '\r')
+          local URL=$1
+          local SIZE=$(curl -sI "$URL" | grep -i Content-Length | awk '{print $2}' | tr -d '\r')
           if [ -z "$SIZE" ]; then
-            echo "Unknown"
+          echo "Unknown"
           else
           echo $(numfmt --to=iec-i --suffix=B $SIZE)
           fi
           }
+        
+         # Check if APK_DOWNLOAD_LINK is not empty, then get size
+          if [ -n "$APK_DOWNLOAD_LINK" ]; then
+          APK_SIZE=$(get_file_size "$APK_DOWNLOAD_LINK")
+          echo "APK size: $APK_SIZE"
+          else
+          echo "APK link not found"
+          fi
+
+          # Check if WINDOWS_DOWNLOAD_LINK is not empty, then get size
+          if [ -n "$WINDOWS_DOWNLOAD_LINK" ]; then
+          WINDOWS_SIZE=$(get_file_size "$WINDOWS_DOWNLOAD_LINK")
+          echo "Windows zip size: $WINDOWS_SIZE"
+          else
+          echo "Windows link not found"
+          fi
+
+          # Check if LINUX_DOWNLOAD_LINK is not empty, then get size
+          if [ -n "$LINUX_DOWNLOAD_LINK" ]; then
+          LINUX_SIZE=$(get_file_size "$LINUX_DOWNLOAD_LINK")
+          echo "Linux zip size: $LINUX_SIZE"
+          else
+          echo "Linux link not found"
+          fi
+
   
           # Get sizes
           WINDOWS_SIZE=$(get_file_size $WINDOWS_DOWNLOAD_LINK)
