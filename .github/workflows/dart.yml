@@ -77,6 +77,7 @@ jobs:
 
       # Configure Gradle for faster builds
       - name: Configure Gradle
+        if: false
         run: |
           mkdir -p ~/.gradle
           echo "org.gradle.daemon=true" >> ~/.gradle/gradle.properties
@@ -286,7 +287,7 @@ jobs:
           BRANCH=${{ github.ref }}
           BRANCH=${BRANCH#refs/heads/}
           echo "BRANCH=${BRANCH}" >> $GITHUB_ENV
-        shell: /usr/bin/bash -e {0}
+          shell: /usr/bin/bash -e {0}
         env:
           CI: true
         continue-on-error: true
@@ -506,7 +507,7 @@ jobs:
 
             # Upload APK to Telegram
             response=$(curl -sS -f -X POST \
-                "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKKEN}}/sendDocument" \
+                "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN}}/sendDocument" \
                 -F "chat_id=${{ secrets.TELEGRAM_CHANNEL_ID}}" \
                 -F "message_thread_id=${{secrets.TELEGRAM_THREAD_ID}}" \
                 -F "document=@last_sha.txt" \
