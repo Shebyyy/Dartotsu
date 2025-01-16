@@ -7,7 +7,6 @@ on:
 jobs:
   build_android:
     runs-on: ubuntu-latest
-    # Only run if commit message contains [build.apk]
     if: contains(github.event.head_commit.message, '[build.apk]') || contains(github.event.head_commit.message, '[build]') || contains(github.event.head_commit.message, '[build.all]')
     outputs:
       apk_link: ${{steps.gdriveUpload_arm64.outputs.web-content-link}}
@@ -23,7 +22,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Cache Flutter dependencies
       - uses: actions/cache@v4
         with:
           path: |
@@ -34,7 +32,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-flutter-
 
-      # Cache Gradle dependencies
       - uses: actions/cache@v4
         with:
           path: |
@@ -43,22 +40,21 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
-      # Setup Cmake
+
       - name: Setup cmake
         uses: jwlawson/actions-setup-cmake@v2
         with:
           cmake-version: '3.18.1'
-      # Install Ninaja
+
       - name: Install system dependencies
         run: |
           sudo apt-get update -y
           sudo apt-get install -y ninja-build
-      # Create symlink for ninja
+
       - name: Create symlink for ninja
         run: |
           mkdir -p /usr/local/lib/android/sdk/cmake/3.18.1/bin
           sudo ln -s /usr/bin/ninja /usr/local/lib/android/sdk/cmake/3.18.1/bin/ninja
-        
 
       - uses: actions/setup-java@v4
         with:
@@ -71,31 +67,12 @@ jobs:
           flutter-version: 3.27.1
           cache: true
 
-          # Download the keystore file (from GitHub Secrets or other storage)
-      - name: Download keystore
-        env:
-          KEYSTORE_BASE64: ${{ secrets.APK_SIGN }}
-        run: echo "$KEYSTORE_BASE64" | base64 --decode > android/app/dartotsu.jks
-
-      # Set up environment variables for signing
-      - name: Set up signing variables
-        env:
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS}}
-        run: |
-          echo "storePassword=$KEYSTORE_PASSWORD" > android/key.properties
-          echo "keyPassword=$KEY_PASSWORD" >> android/key.properties
-          echo "keyAlias=$KEY_ALIAS" >> android/key.properties
-          echo "storeFile=dartotsu.jks" >> android/key.properties
-      # Create .env:
       - name: Setup env File
         env:
           SIMKL_SECRET: ${{ secrets.SIMKL_SECRET }}
         run: |
           echo "SIMKL_SECRET= $SIMKL_SECRET" > .env
 
-      # Configure Gradle for faster builds
       - name: Configure Gradle
         run: |
           mkdir -p ~/.gradle
@@ -103,7 +80,6 @@ jobs:
           echo "org.gradle.parallel=true" >> ~/.gradle/gradle.properties
           echo "org.gradle.caching=true" >> ~/.gradle/gradle.properties
 
-      # Optimize Flutter build
       - run: flutter clean
       - run: flutter pub get
       - run: flutter build apk --release --split-per-abi
@@ -115,7 +91,6 @@ jobs:
             mv $file build/app/outputs/flutter-apk/Dartotsu_Android_${abi}_${{github.ref_name}}.apk
           done
           ls build/app/outputs/flutter-apk
-
 
       - name: Upload arm64 File To Google Drive
         id: gdriveUpload_arm64
@@ -144,9 +119,10 @@ jobs:
           upload-to-folder-id: 1nWYex54zd58SVitJUCva91_4k1PPTdP3
           service-account-json: "${{secrets.GOOGLE_KEY}}"
           overrwrite: true
+
   build_windows:
     runs-on: windows-latest
-    if: contains(github.event.head_commit.message, '[build.windows]') ||  contains(github.event.head_commit.message, '[build]')  ||  contains(github.event.head_commit.message, '[build.all]')
+    if: contains(github.event.head_commit.message, '[build.windows]') || contains(github.event.head_commit.message, '[build]') || contains(github.event.head_commit.message, '[build.all]')
     outputs:
       zip_link: ${{steps.gdriveUpload.outputs.web-content-link}}
 
@@ -161,7 +137,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Cache Flutter and Dart dependencies
       - uses: actions/cache@v4
         with:
           path: |
@@ -173,85 +148,70 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-flutter-
 
-      - name: Set up Signing Tool
-        run: |
-          mkdir $env:USERPROFILE\certs
-          [System.IO.File]::WriteAllBytes("$env:USERPROFILE\certs\Dartotsu.pfx", [Convert]::FromBase64String("${{secrets.PFX_FILE}}"))
-      # Create .env:
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.27.1
+          cache: true
+
       - name: Setup env File
         env:
           SIMKL_SECRET: ${{ secrets.SIMKL_SECRET }}
         run: |
           echo "SIMKL_SECRET= $env:SIMKL_SECRET" > .env
 
-      # Setup Flutter with caching
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: 3.27.1
-          cache: true
-      - name: Setup NuGet.exe for use with actions
-        uses: NuGet/setup-nuget@v2.0.1
-        with:
-          nuget-version: 'latest'
-      # Enable Windows desktop support
       - name: Enable Windows desktop support
         run: flutter config --enable-windows-desktop
 
-      # Get dependencies with cached packages
       - run: flutter pub get
 
-      - name: Extract Version
-        id: get_version
+      - name: Build Windows App
         run: |
-          $version = (Get-Content pubspec.yaml | Select-String -Pattern 'version: ([\d.]+)').Matches.Groups[1].Value
-          echo "version=$version" >> $env:GITHUB_ENV
+          flutter build windows --release
 
-      - name: Build and Sign Setup
-        run: |
-          dart run inno_bundle:build --sign-tool-params '"C:\Program Files (x86)\Windows Kits\10\bin\10.0.19041.0\x64\signtool.exe" sign /fd sha256 /f "C:\Users\runneradmin\certs\Dartotsu.pfx" /p "${{secrets.PFX_PASSWORD}}" /t http://timestamp.digicert.com /v $f' --release
+      - name: Archive Build
+        uses: thedoctor0/zip-release@master
+        with:
+          type: "zip"
+          filename: Dantotsu_Windows_${{github.ref_name}}.zip
+          directory: build/windows/runner/Release
 
-
-      # Upload to Google Drive
       - name: Upload File To Google Drive
         id: gdriveUpload
         uses: hoatruongdev09/google-drive-file-upload-github-action@v1.1
         with:
-          file-path: build\windows\x64\installer\Release\Dartotsu-x86_64-${{env.version}}-Installer.exe
-          upload-name: Dartotsu_windows.exe
+          file-path: build/windows/runner/Release/Dantotsu_Windows_${{github.ref_name}}.zip
+          upload-name: Dantotsu_Windows.zip
           upload-to-folder-id: 1nWYex54zd58SVitJUCva91_4k1PPTdP3
           service-account-json: "${{secrets.GOOGLE_KEY}}"
           overrwrite: true
+
   build_linux:
     runs-on: ubuntu-latest
-    if: contains(github.event.head_commit.message, '[build.linux]')  ||  contains(github.event.head_commit.message, '[build.all]')
+    if: contains(github.event.head_commit.message, '[build.linux]') || contains(github.event.head_commit.message, '[build.all]')
     permissions:
       contents: write
       pull-requests: write
       repository-projects: write
     outputs:
       zip_link: ${{steps.gdriveUpload.outputs.web-content-link}}
+
     steps:
-      # Step 1: Clone repository
-      - name: Cloning repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Step 2: Setup Flutter
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: 3.27.1
           cache: true
 
-      # Step 3: Setup system dependencies
       - name: Install system dependencies
         run: |
           sudo apt-get update -y
           sudo apt-get install -y ninja-build libgtk-3-dev webkit2gtk-4.1 libmpv-dev pkg-config
 
-      # Step 4: Cache Flutter dependencies
-      - name: Cache Flutter dependencies
-        uses: actions/cache@v3
+      - uses: actions/cache@v3
         with:
           path: |
             ~/.pub-cache
@@ -259,89 +219,81 @@ jobs:
           key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.yaml') }}
           restore-keys: |
             ${{ runner.os }}-flutter-
-      # Create .env:
+
       - name: Setup env File
         env:
           SIMKL_SECRET: ${{ secrets.SIMKL_SECRET }}
         run: |
           echo "SIMKL_SECRET= $SIMKL_SECRET" > .env
 
-      # Step 5: Fetch Flutter dependencies
-      - name: Fetch Flutter dependencies
-        run: flutter pub get
+      - run: flutter pub get
 
-      # Step 6: Build the Linux application
-      - name: Build Flutter Linux app
+      - name: Build Linux App
         run: flutter build linux
 
-      # Step 7: Archive the app
-      - name: Archive app
+      - name: Archive Build
         uses: thedoctor0/zip-release@master
         with:
           type: "zip"
           filename: Dantotsu_Linux_${{github.ref_name}}.zip
           directory: build/linux/x64/release/bundle
 
-      # Step 9: Upload to Google Drive
       - name: Upload File To Google Drive
         id: gdriveUpload
         uses: hoatruongdev09/google-drive-file-upload-github-action@v1.1
         with:
           file-path: build/linux/x64/release/bundle/Dantotsu_Linux_${{github.ref_name}}.zip
-          upload-name: Dartotsu_linux.zip
+          upload-name: Dantotsu_Linux.zip
           upload-to-folder-id: 1nWYex54zd58SVitJUCva91_4k1PPTdP3
           service-account-json: "${{secrets.GOOGLE_KEY}}"
           overrwrite: true
 
   build_ios:
     runs-on: macos-latest
-    if: contains(github.event.head_commit.message, '[build.ios]')  ||  contains(github.event.head_commit.message, '[build.all]')
+    if: contains(github.event.head_commit.message, '[build.ios]') || contains(github.event.head_commit.message, '[build.all]')
     permissions:
       contents: write
       pull-requests: write
       repository-projects: write
     outputs:
       ipa_link: ${{steps.gdriveUpload.outputs.web-content-link}}
+
     steps:
-      # Step 1: Clone repository
-      - name: Cloning repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Step 2: Setup Flutter
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: 3.27.1
           cache: true
-      
-      - name: Setup .env File for macOS
+
+      - name: Setup env File
         env:
           SIMKL_SECRET: ${{ secrets.SIMKL_SECRET }}
         run: |
           echo "SIMKL_SECRET= $SIMKL_SECRET" > .env
-        shell: bash
-        
 
-      # Step 3 Get Dependencies
-      - name: Get Dependencies
-        run: flutter pub get
-      #Step 4 Build app for iOS
-      - name: Build iOS
+      - run: flutter pub get
+
+      - name: Build iOS App
+        run: flutter build ios --release --no-codesign
+
+      - name: Archive iOS App
         run: |
-          flutter build ios --release --no-codesign
           cd build/ios/iphoneos
           mkdir -p Payload
           cd Payload
           ln -s ../Runner.app
           cd ..
-          zip -r Dartotsu-iOS-${{ github.ref_name }}.ipa Payload
-      #Step 5 Upload ipa file to google drive
+          zip -r Dantotsu-iOS-${{github.ref_name}}.ipa Payload
+
       - name: Upload File To Google Drive
         id: gdriveUpload
         uses: hoatruongdev09/google-drive-file-upload-github-action@v1.1
         with:
-          file-path: build/ios/iphoneos/Dartotsu-iOS-main.ipa
-          upload-name: Dartotsu-iOS-main.ipa
+          file-path: build/ios/iphoneos/Dantotsu-iOS-${{github.ref_name}}.ipa
+          upload-name: Dantotsu-iOS.ipa
           upload-to-folder-id: 1nWYex54zd58SVitJUCva91_4k1PPTdP3
           service-account-json: "${{secrets.GOOGLE_KEY}}"
           overrwrite: true
