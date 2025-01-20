@@ -3,7 +3,7 @@ from google.oauth2 import service_account
 
 # Authenticate using a service account key
 SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
-SERVICE_ACCOUNT_FILE = '${{secrets.GOOGLE_KEY}}'
+SERVICE_ACCOUNT_FILE = 'service_account.json'
 
 # Build the Drive service
 credentials = service_account.Credentials.from_service_account_file(
