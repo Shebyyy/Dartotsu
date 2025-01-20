@@ -1,12 +1,13 @@
-name: Fetch Google Drive Links
+name: Generate Download Links and Deploy
 
 on:
-  workflow_dispatch: # Allows manual trigger
-  schedule:
-    - cron: "0 * * * *" # Runs every hour (adjust as needed)
+  push:
+    branches:
+      - main
+  workflow_dispatch:
 
 jobs:
-  fetch-links:
+  generate-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -23,9 +24,15 @@ jobs:
           python -m pip install --upgrade pip
           pip install google-api-python-client google-auth google-auth-oauthlib google-auth-httplib2
 
-      - name: Fetch Google Drive Links
+      - name: Run Python script
         env:
-          SERVICE_ACCOUNT_JSON: ${{secrets.SERVICE_ACCOUNT_JSON}}
+          SERVICE_ACCOUNT_JSON: ${{ secrets.SERVICE_ACCOUNT_JSON }}
         run: |
           echo "$SERVICE_ACCOUNT_JSON" > service_account.json
           python fetch_google_drive_links.py
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: . # Ensure `download_links.html` is in the root directory
