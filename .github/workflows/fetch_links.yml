@@ -29,7 +29,7 @@ jobs:
           SERVICE_ACCOUNT_JSON: ${{ secrets.SERVICE_ACCOUNT_JSON }}
         run: |
           echo "$SERVICE_ACCOUNT_JSON" > service_account.json
-          python fetch_google_drive_links.py
+          python scripts/fetch_google_drive_links.py
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
