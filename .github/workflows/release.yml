@@ -293,8 +293,6 @@ jobs:
 
       - name: Categorize commits
         id: categorize
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "Categorizing commits..."
           FEATURES=""
@@ -305,24 +303,19 @@ jobs:
           CHORES=""
           REPO_URL="https://github.com/${{ github.repository }}"
 
-          function get_github_username() {
-            local email="$1"
-            local username=$(gh api -H "Accept: application/vnd.github.v3+json" \
-              /search/users?q=$email+in:email --jq '.items[0].login' 2>/dev/null)
-            echo "$username"
-          }
-
           IFS='|' read -ra COMMIT_LIST <<< "${{ env.commits }}"
           for LINE in "${COMMIT_LIST[@]}"; do
             HASH=$(echo "$LINE" | awk '{print $1}')
             MESSAGE=$(echo "$LINE" | cut -d' ' -f2-)
-            AUTHOR_EMAIL=$(git log -1 --format='%ce' $HASH)
-            GITHUB_USERNAME=$(get_github_username "$AUTHOR_EMAIL")
+            AUTHOR_NAME=$(git log -1 --format='%an' $HASH)  # Get author name
+            AUTHOR_EMAIL=$(git log -1 --format='%ae' $HASH)  # Get author email
+            GITHUB_USERNAME=$(echo "$AUTHOR_EMAIL" | awk -F'[@+]' '{print $2}') # Extract GitHub username
 
+            # If the username is extracted correctly, format it as a GitHub profile link
             if [[ -n "$GITHUB_USERNAME" ]]; then
               AUTHOR_LINK="[@$GITHUB_USERNAME](https://github.com/$GITHUB_USERNAME)"
             else
-              AUTHOR_LINK="$AUTHOR_EMAIL"  # Fallback to email if username is not found
+              AUTHOR_LINK="$AUTHOR_NAME"  # Fallback to author name if username is missing
             fi
 
             LINK="[$HASH]($REPO_URL/commit/$HASH)"
