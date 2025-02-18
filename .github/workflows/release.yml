@@ -295,6 +295,7 @@ jobs:
         id: categorize
         run: |
           echo "Categorizing commits..."
+
           FEATURES=""
           BUG_FIXES=""
           REFACTORS=""
@@ -304,31 +305,18 @@ jobs:
           REPO_URL="https://github.com/${{ github.repository }}"
 
           IFS='|' read -ra COMMIT_LIST <<< "${{ env.commits }}"
+          echo "Commit list: ${COMMIT_LIST[@]}"
+
           for LINE in "${COMMIT_LIST[@]}"; do
             HASH=$(echo "$LINE" | awk '{print $1}')
             MESSAGE=$(echo "$LINE" | cut -d' ' -f2-)
-            AUTHOR_NAME=$(git log -1 --format='%an' $HASH)  # Get author name
-            AUTHOR_EMAIL=$(git log -1 --format='%ae' $HASH)  # Get author email
 
-            # Check if email matches GitHub's noreply format
-            if [[ "$AUTHOR_EMAIL" =~ ([0-9]+)\+([^@]+)@users.noreply.github.com ]]; then
-              GITHUB_USERNAME="${BASH_REMATCH[2]}"
-            elif [[ "$AUTHOR_EMAIL" =~ "@gmail.com" || "$AUTHOR_EMAIL" =~ "@outlook.com" ]]; then
-              GITHUB_USERNAME=""  # Ignore generic email providers
-            else
-              GITHUB_USERNAME="${AUTHOR_EMAIL%%@*}"  # Fallback: use email prefix
-            fi
-
-            # Format the author link
-            if [[ -n "$GITHUB_USERNAME" ]]; then
-              AUTHOR_LINK="[@$GITHUB_USERNAME](https://github.com/$GITHUB_USERNAME)"
-            else
-              AUTHOR_LINK="$AUTHOR_NAME"  # Use author name if no username found
-            fi
+            # Get GitHub username directly from commit metadata
+            AUTHOR_USERNAME=$(git log -1 --format="%an" $HASH)
+            AUTHOR_LINK="[@$AUTHOR_USERNAME](https://github.com/$AUTHOR_USERNAME)"
 
             LINK="[$HASH]($REPO_URL/commit/$HASH)"
             FORMATTED_COMMIT="* $LINK: $MESSAGE by $AUTHOR_LINK"
-
             echo "Processing commit: $FORMATTED_COMMIT"
 
             if [[ $MESSAGE == feat* ]]; then
@@ -346,7 +334,8 @@ jobs:
             fi
           done
 
-          # Append categorized commits to CHANGELOG.md
+          # Append to CHANGELOG.md
+          echo "" > CHANGELOG.md  # Clear existing content
           if [ -n "$FEATURES" ]; then
             echo "### 🎉 New Features" >> CHANGELOG.md
             echo -e "$FEATURES" >> CHANGELOG.md
