@@ -309,13 +309,21 @@ jobs:
             MESSAGE=$(echo "$LINE" | cut -d' ' -f2-)
             AUTHOR_NAME=$(git log -1 --format='%an' $HASH)  # Get author name
             AUTHOR_EMAIL=$(git log -1 --format='%ae' $HASH)  # Get author email
-            GITHUB_USERNAME=$(echo "$AUTHOR_EMAIL" | awk -F'[@+]' '{print $2}') # Extract GitHub username
 
-            # If the username is extracted correctly, format it as a GitHub profile link
+            # Check if email matches GitHub's noreply format
+            if [[ "$AUTHOR_EMAIL" =~ ([0-9]+)\+([^@]+)@users.noreply.github.com ]]; then
+              GITHUB_USERNAME="${BASH_REMATCH[2]}"
+            elif [[ "$AUTHOR_EMAIL" =~ "@gmail.com" || "$AUTHOR_EMAIL" =~ "@outlook.com" ]]; then
+              GITHUB_USERNAME=""  # Ignore generic email providers
+            else
+              GITHUB_USERNAME="${AUTHOR_EMAIL%%@*}"  # Fallback: use email prefix
+            fi
+
+            # Format the author link
             if [[ -n "$GITHUB_USERNAME" ]]; then
               AUTHOR_LINK="[@$GITHUB_USERNAME](https://github.com/$GITHUB_USERNAME)"
             else
-              AUTHOR_LINK="$AUTHOR_NAME"  # Fallback to author name if username is missing
+              AUTHOR_LINK="$AUTHOR_NAME"  # Use author name if no username found
             fi
 
             LINK="[$HASH]($REPO_URL/commit/$HASH)"
