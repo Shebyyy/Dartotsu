@@ -293,6 +293,8 @@ jobs:
 
       - name: Categorize commits
         id: categorize
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "Categorizing commits..."
           FEATURES=""
@@ -303,20 +305,28 @@ jobs:
           CHORES=""
           REPO_URL="https://github.com/${{ github.repository }}"
 
+          function get_github_username() {
+            local email="$1"
+            local username=$(gh api -H "Accept: application/vnd.github.v3+json" \
+              /search/users?q=$email+in:email --jq '.items[0].login' 2>/dev/null)
+            echo "$username"
+          }
+
           IFS='|' read -ra COMMIT_LIST <<< "${{ env.commits }}"
           for LINE in "${COMMIT_LIST[@]}"; do
             HASH=$(echo "$LINE" | awk '{print $1}')
             MESSAGE=$(echo "$LINE" | cut -d' ' -f2-)
-            AUTHOR=$(git log -1 --format='%an' $HASH)  # Get author name
-            AUTHOR_USERNAME=$(git log -1 --format='%ae' $HASH | cut -d'@' -f1)  # Extract username from email
-            LINK="[$HASH]($REPO_URL/commit/$HASH)"
+            AUTHOR_EMAIL=$(git log -1 --format='%ce' $HASH)
+            GITHUB_USERNAME=$(get_github_username "$AUTHOR_EMAIL")
 
-            # Format commit message with author mention
-            if [ -n "$AUTHOR_USERNAME" ]; then
-              FORMATTED_COMMIT="* $LINK: $MESSAGE by @$AUTHOR_USERNAME"
+            if [[ -n "$GITHUB_USERNAME" ]]; then
+              AUTHOR_LINK="[@$GITHUB_USERNAME](https://github.com/$GITHUB_USERNAME)"
             else
-              FORMATTED_COMMIT="* $LINK: $MESSAGE"
+              AUTHOR_LINK="$AUTHOR_EMAIL"  # Fallback to email if username is not found
             fi
+
+            LINK="[$HASH]($REPO_URL/commit/$HASH)"
+            FORMATTED_COMMIT="* $LINK: $MESSAGE by $AUTHOR_LINK"
 
             echo "Processing commit: $FORMATTED_COMMIT"
 
