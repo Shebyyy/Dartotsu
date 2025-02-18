@@ -263,7 +263,6 @@ jobs:
           
   generate-changelog:
     runs-on: ubuntu-latest
-    needs: [build_android,build_windows,build_linux,build_ios,build_macos]
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -303,52 +302,58 @@ jobs:
           PERFORMANCE=""
           CHORES=""
           REPO_URL="https://github.com/${{ github.repository }}"
-    
-          IFS='|' read -ra COMMIT_LIST <<< "${{ env.commits }}"
-          echo "Commit list: ${COMMIT_LIST[@]}"
-          for LINE in "${COMMIT_LIST[@]}"; do
-          HASH=$(echo "$LINE" | awk '{print $1}')
-          MESSAGE=$(echo "$LINE" | cut -d' ' -f2-)
-          LINK="[$HASH]($REPO_URL/commit/$HASH)"
 
-          FORMATTED_COMMIT="* $LINK: $MESSAGE"
-          echo "Processing commit: $FORMATTED_COMMIT"
-          if [[ $MESSAGE == feat* ]]; then
-           FEATURES+="$FORMATTED_COMMIT\n"
-          elif [[ $MESSAGE == fix* || $MESSAGE == bug* || $MESSAGE == improvement* || $MESSAGE == patch* ]]; then
-          BUG_FIXES+="$FORMATTED_COMMIT\n"
-          elif [[ $MESSAGE == refactor* ]]; then
-          REFACTORS+="$FORMATTED_COMMIT\n"
-          elif [[ $MESSAGE == style* ]]; then
-          STYLE_CHANGES+="$FORMATTED_COMMIT\n"
-          elif [[ $MESSAGE == perf* ]]; then
-          PERFORMANCE+="$FORMATTED_COMMIT\n"
-          elif [[ $MESSAGE == chore* || $MESSAGE == docs* || $MESSAGE == build* || $MESSAGE == ci* ]]; then
-          CHORES+="$FORMATTED_COMMIT\n"
-          fi
+          IFS='|' read -ra COMMIT_LIST <<< "${{ env.commits }}"
+          for LINE in "${COMMIT_LIST[@]}"; do
+            HASH=$(echo "$LINE" | awk '{print $1}')
+            MESSAGE=$(echo "$LINE" | cut -d' ' -f2-)
+            AUTHOR=$(git log -1 --format='%an' $HASH)  # Get author name
+            AUTHOR_USERNAME=$(git log -1 --format='%ae' $HASH | cut -d'@' -f1)  # Extract username from email
+            LINK="[$HASH]($REPO_URL/commit/$HASH)"
+
+            # Format commit message with author mention
+            if [ -n "$AUTHOR_USERNAME" ]; then
+              FORMATTED_COMMIT="* $LINK: $MESSAGE by @$AUTHOR_USERNAME"
+            else
+              FORMATTED_COMMIT="* $LINK: $MESSAGE"
+            fi
+
+            echo "Processing commit: $FORMATTED_COMMIT"
+
+            if [[ $MESSAGE == feat* ]]; then
+              FEATURES+="$FORMATTED_COMMIT\n"
+            elif [[ $MESSAGE == fix* || $MESSAGE == bug* || $MESSAGE == improvement* || $MESSAGE == patch* ]]; then
+              BUG_FIXES+="$FORMATTED_COMMIT\n"
+            elif [[ $MESSAGE == refactor* ]]; then
+              REFACTORS+="$FORMATTED_COMMIT\n"
+            elif [[ $MESSAGE == style* ]]; then
+              STYLE_CHANGES+="$FORMATTED_COMMIT\n"
+            elif [[ $MESSAGE == perf* ]]; then
+              PERFORMANCE+="$FORMATTED_COMMIT\n"
+            elif [[ $MESSAGE == chore* || $MESSAGE == docs* || $MESSAGE == build* || $MESSAGE == ci* ]]; then
+              CHORES+="$FORMATTED_COMMIT\n"
+            fi
           done
 
-          # Removed the version tag section
-          # echo "### ${GITHUB_REF#refs/tags/}" >> CHANGELOG.md  # No version tag added
-
+          # Append categorized commits to CHANGELOG.md
           if [ -n "$FEATURES" ]; then
-          echo "### 🎉 New Features" >> CHANGELOG.md
-          echo -e "$FEATURES" >> CHANGELOG.md
+            echo "### 🎉 New Features" >> CHANGELOG.md
+            echo -e "$FEATURES" >> CHANGELOG.md
           fi
           if [ -n "$BUG_FIXES" ]; then
-          echo "### 🛠️ Bug Fixes & Improvements" >> CHANGELOG.md
-          echo -e "$BUG_FIXES" >> CHANGELOG.md
+            echo "### 🛠️ Bug Fixes & Improvements" >> CHANGELOG.md
+            echo -e "$BUG_FIXES" >> CHANGELOG.md
           fi
           if [ -n "$REFACTORS" ]; then
-          echo "### 🔧 Refactors" >> CHANGELOG.md
-          echo -e "$REFACTORS" >> CHANGELOG.md
+            echo "### 🔧 Refactors" >> CHANGELOG.md
+            echo -e "$REFACTORS" >> CHANGELOG.md
           fi
           if [ -n "$STYLE_CHANGES" ]; then
-          echo "### 🎨 Style Changes" >> CHANGELOG.md
-          echo -e "$STYLE_CHANGES" >> CHANGELOG.md
+            echo "### 🎨 Style Changes" >> CHANGELOG.md
+            echo -e "$STYLE_CHANGES" >> CHANGELOG.md
           fi
           if [ -n "$PERFORMANCE" ]; then
-          echo "### 🚀 Performance Improvements" >> CHANGELOG.md
+            echo "### 🚀 Performance Improvements" >> CHANGELOG.md
             echo -e "$PERFORMANCE" >> CHANGELOG.md
           fi
           if [ -n "$CHORES" ]; then
