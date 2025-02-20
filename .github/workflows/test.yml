@@ -61,21 +61,12 @@ jobs:
               TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
               TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHANNEL_ID }}
               TELEGRAM_TOPIC: ${{ secrets.TELEGRAM_THREAD_ID }}
-            run: |
-              # Escape Markdown characters but keep **bold** intact
-              ESCAPED_MESSAGE=$(echo "$FORMATTED_NOTES" | sed -E \
-                  -e 's/([_[\]()~`>#\-=|{}.!])/\\\1/g')
-          
-              # Ensure commit messages stay bold while keeping links intact
-              ESCAPED_MESSAGE=$(echo "$ESCAPED_MESSAGE" | sed -E 's/\*\*(.*)\*\*/**\1**/g')
-          
-              # Fix commit links to prevent markdown breaking
-              ESCAPED_MESSAGE=$(echo "$ESCAPED_MESSAGE" | sed -E 's/\] \(https/](https/g')
-          
+            run: |          
+         
               # Send message to Telegram using Markdown
               curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
                   -d "chat_id=$TELEGRAM_CHAT_ID" \
                   -d "message_thread_id=$TELEGRAM_TOPIC" \
-                  --data-urlencode "text=$ESCAPED_MESSAGE" \
+                  --data-urlencode "text=$FORMATTED_NOTES" \
                   -d "parse_mode=Markdown" \
                   -d "disable_web_page_preview=true"
