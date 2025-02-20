@@ -46,19 +46,9 @@ jobs:
           echo "EOF" >> $GITHUB_ENV
 
       - name: Send Release Notes to Telegram
-        run: |
-            # Format headings properly (**Bold**)
-            commit=$(echo "$FORMATTED_NOTES" | sed -E 's/^###[[:space:]]*(.*)$/\*\*\1\*\*/g')
-            
-            # Remove extra blank lines
-            commit=$(echo "$commit" | awk 'BEGIN {prev=""} {if (NF == 0) {if (prev != "") print ""; prev=""} else {print; prev=$0}}')
-            
+        run: |            
             # Replace list markers for better readability
-            commit=$(echo "$commit" | sed 's/^* /🔹 /g')
-            commit=$(echo "$commit" | sed 's/^> /🔹 /g')
-            
-            # Fix commit formatting: "):" → ") :"
-            tel_commit=$(echo "$commit" | sed -E 's/\): [^:]+:/) :/g')
+            commit=$(echo "$FORMATTED_NOTES" | sed 's/^* /🔹 /g')
             
             # Escape Markdown characters, but **preserve bold text**
             ESCAPED_MESSAGE=$(echo "$tel_commit" | sed -E \
