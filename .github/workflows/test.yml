@@ -62,10 +62,14 @@ jobs:
               TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHANNEL_ID }}
               TELEGRAM_TOPIC: ${{ secrets.TELEGRAM_THREAD_ID }}
             run: |
+              # Escape special Markdown characters except **bold** and [links](url)
+              ESCAPED_MESSAGE=$(echo "$FORMATTED_NOTES" | sed -E \
+              -e 's/([_*\[\]()])/\\\1/g' )  # Escape _, *, [, ], (, )
+              
               # Send message to Telegram using Markdown
               curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
                   -d "chat_id=$TELEGRAM_CHAT_ID" \
                   -d "message_thread_id=$TELEGRAM_TOPIC" \
-                  --data-urlencode "text=$FORMATTED_NOTES" \
+                  --data-urlencode "text=$ESCAPED_MESSAGE" \
                   -d "parse_mode=Markdown" \
                   -d "disable_web_page_preview=true"
