@@ -48,7 +48,7 @@ jobs:
       - name: Send Release Notes to Telegram
         run: |            
             # Replace list markers for better readability
-            commit=$(echo "$FORMATTED_NOTES" | sed 's/^* />🔹 /g')
+            commit=$(echo "$FORMATTED_NOTES" | sed 's/^* /🔹 /g')
             
             # Print the final escaped message before sending
             echo "=== Formatted Telegram Message ==="
