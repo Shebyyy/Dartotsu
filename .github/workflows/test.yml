@@ -49,6 +49,11 @@ jobs:
         run: |            
             # Replace list markers for better readability
             commit=$(echo "$FORMATTED_NOTES" | sed 's/^* /🔹 /g')
+            
+            # Print the final escaped message before sending
+            echo "=== Formatted Telegram Message ==="
+            echo "$commit"
+            echo "=================================="
                         
             # Send message to Telegram using Markdown
             curl -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
