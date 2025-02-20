@@ -62,14 +62,11 @@ jobs:
               TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHANNEL_ID }}
               TELEGRAM_TOPIC: ${{ secrets.TELEGRAM_THREAD_ID }}
             run: |
-              # Escape only necessary special Markdown characters
+              # Escape Markdown characters that might break formatting
               ESCAPED_MESSAGE=$(echo "$FORMATTED_NOTES" | sed -E \
-                  -e 's/([_\[\]()])/\\\1/g')
+                  -e 's/([_*[\]()~`>#+\-=|{}.!])/\\\1/g')
           
-              # Ensure commit messages stay bold while keeping links intact
-              ESCAPED_MESSAGE=$(echo "$ESCAPED_MESSAGE" | sed -E 's/\*\*(.*)\*\*/**\1**/g')
-          
-              # Fix commit links to prevent markdown breaking
+              # Fix commit links to prevent breaking Markdown
               ESCAPED_MESSAGE=$(echo "$ESCAPED_MESSAGE" | sed -E 's/\] \(https/](https/g')
           
               # Send message to Telegram using Markdown
