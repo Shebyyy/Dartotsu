@@ -45,43 +45,30 @@ jobs:
           echo "$FORMATTED_NOTES" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
-      - name: Send message to Discord
-        env:
-          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      - name: Send Release Notes to Telegram
         run: |
-          # Ensure proper JSON formatting
-          JSON_PAYLOAD=$(jq -Rs --arg content "$FORMATTED_NOTES" '{"content": $content}')
-
-          # Send the message to Discord using the webhook
-          curl -H "Content-Type: application/json" \
-              -X POST \
-              -d "$JSON_PAYLOAD" \
-              "$DISCORD_WEBHOOK_URL"
-
-          - name: Send Release Notes to Telegram
-            run: |
-              # Format headings properly (**Bold**)
-              commit=$(echo "$FORMATTED_NOTES" | sed -E 's/^###[[:space:]]*(.*)$/\*\*\1\*\*/g')
-          
-              # Remove extra blank lines
-              commit=$(echo "$commit" | awk 'BEGIN {prev=""} {if (NF == 0) {if (prev != "") print ""; prev=""} else {print; prev=$0}}')
-          
-              # Replace list markers for better readability
-              commit=$(echo "$commit" | sed 's/^* /🔹 /g')
-              commit=$(echo "$commit" | sed 's/^> /🔹 /g')
-          
-              # Fix commit formatting: "):" → ") :"
-              tel_commit=$(echo "$commit" | sed -E 's/\): [^:]+:/) :/g')
-          
-              # Escape Markdown characters, but **preserve bold text**
-              ESCAPED_MESSAGE=$(echo "$tel_commit" | sed -E \
-                -e 's/([_[\]()])/\\\1/g' \  # Escape [, ], (, )
-                -e 's/(?<!\*)\*(?!\*)/\\*/g')  # Escape single * but not **bold**
-          
-              # Send message to Telegram using Markdown
-              curl -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
-                -H "Content-Type: application/json" \
-                -d @<(jq -n --arg chat_id "${{ secrets.TELEGRAM_CHANNEL_ID }}" \
-                              --arg thread_id "${{ secrets.TELEGRAM_THREAD_ID }}" \
-                              --arg text "$ESCAPED_MESSAGE" \
-                              '{ "chat_id": $chat_id, "message_thread_id": $thread_id, "text": $text, "parse_mode": "Markdown", "disable_web_page_preview": true }')
+          # Format headings properly (**Bold**)
+          commit=$(echo "$FORMATTED_NOTES" | sed -E 's/^###[[:space:]]*(.*)$/\*\*\1\*\*/g')
+      
+          # Remove extra blank lines
+          commit=$(echo "$commit" | awk 'BEGIN {prev=""} {if (NF == 0) {if (prev != "") print ""; prev=""} else {print; prev=$0}}')
+      
+          # Replace list markers for better readability
+          commit=$(echo "$commit" | sed 's/^* /🔹 /g')
+          commit=$(echo "$commit" | sed 's/^> /🔹 /g')
+      
+          # Fix commit formatting: "):" → ") :"
+          tel_commit=$(echo "$commit" | sed -E 's/\): [^:]+:/) :/g')
+      
+          # Escape Markdown characters, but **preserve bold text**
+          ESCAPED_MESSAGE=$(echo "$tel_commit" | sed -E \
+            -e 's/([_[\]()])/\\\1/g' \  # Escape [, ], (, )
+            -e 's/(?<!\*)\*(?!\*)/\\*/g')  # Escape single * but not **bold**
+      
+          # Send message to Telegram using Markdown
+          curl -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -H "Content-Type: application/json" \
+            -d @<(jq -n --arg chat_id "${{ secrets.TELEGRAM_CHANNEL_ID }}" \
+                          --arg thread_id "${{ secrets.TELEGRAM_THREAD_ID }}" \
+                          --arg text "$ESCAPED_MESSAGE" \
+                          '{ "chat_id": $chat_id, "message_thread_id": $thread_id, "text": $text, "parse_mode": "Markdown", "disable_web_page_preview": true }')
