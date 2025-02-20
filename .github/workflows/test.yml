@@ -76,4 +76,4 @@ jobs:
                   -d "message_thread_id=$TELEGRAM_TOPIC" \
                   --data-urlencode "text=$ESCAPED_MESSAGE" \
                   -d "parse_mode=Markdown"
-                  -d "disable_web_page_preview=true
+                  -d "disable_web_page_preview=true"
