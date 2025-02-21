@@ -15,7 +15,7 @@ jobs:
             id: get_release_notes
             run: |
                 RELEASE_DATA=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-                "https://api.github.com/repos/grayankit/DantotsuRe/releases/latest")
+                "https://api.github.com/repos/${{ github.repository }}/releases/latest")
 
                 RELEASE_NOTES=$(echo "$RELEASE_DATA" | jq -r '.body')
                 echo "Release Notes: $RELEASE_NOTES"
@@ -27,17 +27,24 @@ jobs:
           - name: Format Release Notes
             id: format_notes
             run: |
-                echo "**🚀 Features**" > formatted_notes.txt
-                echo "$(echo "$RELEASE_NOTES" | grep -iE '^\*\s\[[a-f0-9]+\]\(.*\):\sfeat' | head -n 5 || echo 'None')" >> formatted_notes.txt
-                echo "" >> formatted_notes.txt
-        
-                echo "**🐛 Fixes**" >> formatted_notes.txt
-                echo "$(echo "$RELEASE_NOTES" | grep -iE '^\*\s\[[a-f0-9]+\]\(.*\):\sfix' | head -n 5 || echo 'None')" >> formatted_notes.txt
-                echo "" >> formatted_notes.txt
-        
-                echo "**🛠 Chores**" >> formatted_notes.txt
-                echo "$(echo "$RELEASE_NOTES" | grep -iE '^\*\s\[[a-f0-9]+\]\(.*\):\schore' | head -n 5 || echo 'None')" >> formatted_notes.txt
-                echo "" >> formatted_notes.txt
+              echo "**🚀 Features**" > formatted_notes.txt
+              echo "<blockquote>" >> formatted_notes.txt
+              echo "$(echo "$RELEASE_NOTES" | grep -iE '^\*\s\[[a-f0-9]+\]\(.*\):\sfeat' | head -n 5 || echo 'None')" >> formatted_notes.txt
+              echo "</blockquote>" >> formatted_notes.txt
+              echo "" >> formatted_notes.txt
+          
+              echo "**🐛 Fixes**" >> formatted_notes.txt
+              echo "<blockquote>" >> formatted_notes.txt
+              echo "$(echo "$RELEASE_NOTES" | grep -iE '^\*\s\[[a-f0-9]+\]\(.*\):\sfix' | head -n 5 || echo 'None')" >> formatted_notes.txt
+              echo "</blockquote>" >> formatted_notes.txt
+              echo "" >> formatted_notes.txt
+          
+              echo "**🛠 Chores**" >> formatted_notes.txt
+              echo "<blockquote>" >> formatted_notes.txt
+              echo "$(echo "$RELEASE_NOTES" | grep -iE '^\*\s\[[a-f0-9]+\]\(.*\):\schore' | head -n 5 || echo 'None')" >> formatted_notes.txt
+              echo "</blockquote>" >> formatted_notes.txt
+              echo "" >> formatted_notes.txt
+
         
                 cat formatted_notes.txt
                 FORMATTED_NOTES=$(cat formatted_notes.txt) 
@@ -82,15 +89,3 @@ jobs:
                     -d "text=$markdown_info_tel" \
                     -d "parse_mode=HTML" \
                     -d "disable_web_page_preview=true"
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-          
