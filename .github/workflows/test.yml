@@ -63,8 +63,8 @@ jobs:
           - name: Send message to Telegram
             env:
                 TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-                TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-                TELEGRAM_TOPIC: ${{ secrets.TELEGRAM_TOPIC }}
+                TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHANNEL_ID }}
+                TELEGRAM_TOPIC: ${{ secrets.TELEGRAM_THREAD_ID }}
             run: |
                 FORMATTED_NOTES=$(echo "FORMATTED_NOTES" | sed -E 's/\): [^:]+:/) :/g')
                 echo "$FORMATTED_NOTES" > markdown.txt
