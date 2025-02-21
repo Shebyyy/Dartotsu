@@ -7,11 +7,10 @@ jobs:
     notes:
         runs-on: ubuntu-latest
         steps:
-          - name: Cloning repository
+          - name: Cloing repository
             uses: actions/checkout@v4
             with:
               fetch-depth: 0
-
           - name: Get Latest Release Notes
             id: get_release_notes
             run: |
@@ -25,48 +24,42 @@ jobs:
                 echo "$RELEASE_NOTES" >> $GITHUB_ENV
                 echo "EOF" >> $GITHUB_ENV
 
-          - name: Format Release Notes into Separate Files
+          - name: Format Release Notes
             id: format_notes
             run: |
-                echo "🚀 Features" > features.txt
-                echo "$(echo "$RELEASE_NOTES" | grep -iE '^\*\s[a-f0-9]+.*:\sfeat' | head -n 5 || echo 'None')" >> features.txt
-
-                echo "🐛 Fixes" > fixes.txt
-                echo "$(echo "$RELEASE_NOTES" | grep -iE '^\*\s[a-f0-9]+.*:\sfix' | head -n 5 || echo 'None')" >> fixes.txt
-
-                echo "🛠 Chores" > chores.txt
-                echo "$(echo "$RELEASE_NOTES" | grep -iE '^\*\s[a-f0-9]+.*:\schore' | head -n 5 || echo 'None')" >> chores.txt
-
-          - name: Format Each Section with Blockquote
-            id: format_sections
-            run: |
-                format_section() {
-                    section_name=$1
-                    file_name=$2
-                    echo "<b>${section_name}</b>" > formatted_$file_name
-                    while IFS= read -r line; do
-                        echo "<blockquote>${line}</blockquote>" >> formatted_$file_name
-                    done < $file_name
-                }
-
-                format_section "🚀 Features" "features.txt"
-                format_section "🐛 Fixes" "fixes.txt"
-                format_section "🛠 Chores" "chores.txt"
-
-          - name: Process Formatted Notes with tel_parser.sed
-            id: process_notes
-            run: |
-                chmod +x scripts/tel_parser.sed
-                
-                for file in formatted_features.txt formatted_fixes.txt formatted_chores.txt; do
-                    ./scripts/tel_parser.sed "$file" >> processed_$file
-                done
-
-                TELEGRAM_MESSAGE=$(cat processed_formatted_features.txt processed_formatted_fixes.txt processed_formatted_chores.txt)
-
-                echo "TELEGRAM_MESSAGE<<EOF" >> $GITHUB_ENV
-                echo "$TELEGRAM_MESSAGE" >> $GITHUB_ENV
+                echo "**🚀 Features**" > formatted_notes.txt
+                echo "$(echo "$RELEASE_NOTES" | grep -iE '^\*\s\[[a-f0-9]+\]\(.*\):\feat' | head -n 5 | sed -E 's/(\*\s[a-f0-9]+.*):\s[^:]+:\s/\1 : /g' || echo 'None')" >> formatted_notes.txt
+                echo "" >> formatted_notes.txt
+        
+                echo "**🐛 Fixes**" >> formatted_notes.txt
+                echo "$(echo "$RELEASE_NOTES" | grep -iE '^\*\s\[[a-f0-9]+\]\(.*\):\sfix' | head -n 5 || echo 'None')" >> formatted_notes.txt
+                echo "$(echo "$RELEASE_NOTES" | grep -iE '^\*\s\[[a-f0-9]+\]\(.*\):\sfix' | head -n 5 | sed -E 's/(\*\s[a-f0-9]+.*):\s[^:]+:\s/\1 : /g' || echo 'None')" >> formatted_notes.txt
+                echo "" >> formatted_notes.txt
+        
+                echo "**🛠 Chores**" >> formatted_notes.txt
+                echo "$(echo "$RELEASE_NOTES" | grep -iE '^\*\s\[[a-f0-9]+\]\(.*\):\schore' | head -n 5 || echo 'None')" >> formatted_notes.txt
+                echo "$(echo "$RELEASE_NOTES" | grep -iE '^\*\s\[[a-f0-9]+\]\(.*\):\schore' | head -n 5 | sed -E 's/(\*\s[a-f0-9]+.*):\s[^:]+:\s/\1 : /g' || echo 'None')" >> formatted_notes.txt
+                echo "" >> formatted_notes.txt
+        
+                cat formatted_notes.txt
+                FORMATTED_NOTES=$(cat formatted_notes.txt) 
+                echo "FORMATTED_NOTES<<EOF" >> $GITHUB_ENV
+                echo "$FORMATTED_NOTES" >> $GITHUB_ENV
                 echo "EOF" >> $GITHUB_ENV
+        
+          - name: Send message to Discord
+            env:
+                DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+            run: |
+                # Ensure proper JSON formatting
+                JSON_PAYLOAD=$(jq -Rs --arg content "$FORMATTED_NOTES" '{"content": $content}')
+                
+                # Send the message to Discord using the webhook
+                curl -H "Content-Type: application/json" \
+                    -X POST \
+                    -d "$JSON_PAYLOAD" \
+                    $DISCORD_WEBHOOK_URL
+
 
           - name: Send message to Telegram
             env:
@@ -74,8 +67,19 @@ jobs:
                 TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHANNEL_ID }}
                 TELEGRAM_TOPIC: ${{ secrets.TELEGRAM_THREAD_ID }}
             run: |
+
+                echo "$FORMATTED_NOTES" > markdown.txt
+                chmod +x scripts/tel_parser.sed
+                ./scripts/tel_parser.sed markdown.txt >> output.txt
+
+                markdown_info_tel=$(< output.txt)
+
+                echo "$markdown_info_tel"
+            
+                # Send message to Telegram
                 curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
                     -d "chat_id=$TELEGRAM_CHAT_ID" \
                     -d "message_thread_id=$TELEGRAM_TOPIC" \
-                    -d "text=$TELEGRAM_MESSAGE" \
-                    -d "parse_mode=HTML"
+                    -d "text=$markdown_info_tel" \
+                    -d "parse_mode=HTML" \
+                    -d "disable_web_page_preview=true"
