@@ -70,15 +70,12 @@ jobs:
               # Extract Features, Fixes, and Chores into separate files
               echo "**🚀 Features**" > TFeatures.txt
               echo "$(echo "$FORMATTED_NOTES" | grep -iE '^\*\s\[[a-f0-9]+\]\(.*\):\sfeat' | head -n 5 || echo 'None')" > feat.txt
-              echo "" >> feat.txt
               
               echo "**🐛 Fixes**" > TFixes.txt
               echo "$(echo "$FORMATTED_NOTES" | grep -iE '^\*\s\[[a-f0-9]+\]\(.*\):\sfix' | head -n 5 || echo 'None')" > fixes.txt
-              echo "" >> fixes.txt
               
               echo "**🛠 Chores**" > TChores.txt
               echo "$(echo "$FORMATTED_NOTES" | grep -iE '^\*\s\[[a-f0-9]+\]\(.*\):\schore' | head -n 5 || echo 'None')" > chores.txt
-              echo "" >> chores.txt
               
               # Ensure the script is executable
               chmod +x scripts/tel_parser.sed
@@ -92,17 +89,18 @@ jobs:
               ./scripts/tel_parser.sed TChores.txt > TChoresT.txt
               
               # Wrap parsed content with <blockquote> tags on the same line
-              feat_block=$(echo -n "<blockquote>$(cat feat_parsed.txt)</blockquote>")
-              fixes_block=$(echo -n "<blockquote>$(cat fixes_parsed.txt)</blockquote>")
-              chores_block=$(echo -n "<blockquote>$(cat chores_parsed.txt)</blockquote>")
+              feat_block="<blockquote>$(cat feat_parsed.txt)</blockquote>"
+              fixes_block="<blockquote>$(cat fixes_parsed.txt)</blockquote>"
+              chores_block="<blockquote>$(cat chores_parsed.txt)</blockquote>"
               
-              # Combine everything into final output
-              cat TFeaturesT.txt feat_block.txt TFixesT.txt fixes_block.txt TChoresT.txt chores_block.txt > output.txt
+              # Combine everything into final output (without extra lines)
+              echo "$(cat TFeaturesT.txt) $feat_block $(cat TFixesT.txt) $fixes_block $(cat TChoresT.txt) $chores_block" > output.txt
               
               markdown_info_tel=$(< output.txt)
               
               echo "Final Telegram Message:"
               echo "$markdown_info_tel"
+
               
               # Send message to Telegram
               curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
