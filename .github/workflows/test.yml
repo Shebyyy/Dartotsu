@@ -27,24 +27,41 @@ jobs:
           - name: Format Release Notes
             id: format_notes
             run: |
-                echo "**🚀 Features**" > formatted_notes.txt
-                echo "$(echo "$RELEASE_NOTES" | grep -iE '^\*\s[a-f0-9]+.*:\sfeat' <<< "$RELEASE_NOTES" | head -n 5 | sed -E 's/(\*\s[a-f0-9]+.*):\s[^:]+:\s/\1 : /g' >> formatted_notes.txt || echo "None" >> formatted_notes.txt
-                echo "" >> formatted_notes.txt
+              echo "**🚀 Features**" > formatted_notes.txt
+              FEATURES=$(echo "$RELEASE_NOTES" | grep -iE '^\*\s[a-f0-9]+.*:\sfeat' | head -n 5 | sed -E 's/(\*\s[a-f0-9]+.*):\s[^:]+:\s/\1 : /g')
+              if [[ -z "$FEATURES" ]]; then
+                  echo "None" >> formatted_notes.txt
+              else
+                  echo "$FEATURES" >> formatted_notes.txt
+              fi
+              echo "" >> formatted_notes.txt
+              
+              echo "**🐛 Fixes**" >> formatted_notes.txt
+              FIXES=$(echo "$RELEASE_NOTES" | grep -iE '^\*\s[a-f0-9]+.*:\sfix' | head -n 5 | sed -E 's/(\*\s[a-f0-9]+.*):\s[^:]+:\s/\1 : /g')
+              if [[ -z "$FIXES" ]]; then
+                  echo "None" >> formatted_notes.txt
+              else
+                  echo "$FIXES" >> formatted_notes.txt
+              fi
+              echo "" >> formatted_notes.txt
+              
+              echo "**🛠 Chores**" >> formatted_notes.txt
+              CHORES=$(echo "$RELEASE_NOTES" | grep -iE '^\*\s[a-f0-9]+.*:\schore' | head -n 5 | sed -E 's/(\*\s[a-f0-9]+.*):\s[^:]+:\s/\1 : /g')
+              if [[ -z "$CHORES" ]]; then
+                  echo "None" >> formatted_notes.txt
+              else
+                  echo "$CHORES" >> formatted_notes.txt
+              fi
+              echo "" >> formatted_notes.txt
+              
+              # Print the formatted notes
+              cat formatted_notes.txt
+              
+              # Store in GitHub environment
+              echo "FORMATTED_NOTES<<EOF" >> $GITHUB_ENV
+              cat formatted_notes.txt >> $GITHUB_ENV
+              echo "EOF" >> $GITHUB_ENV
 
-                echo "**🐛 Fixes**" >> formatted_notes.txt
-                
-                echo "$(echo "$RELEASE_NOTES" | grep -iE '^\*\s[a-f0-9]+.*:\sfix' <<< "$RELEASE_NOTES" | head -n 5 | sed -E 's/(\*\s[a-f0-9]+.*):\s[^:]+:\s/\1 : /g' >> formatted_notes.txt || echo "None" >> formatted_notes.txt
-                echo "" >> formatted_notes.txt
-
-                echo "**🛠 Chores**" >> formatted_notes.txt
-                echo "$(echo "$RELEASE_NOTES" | grep -iE '^\*\s[a-f0-9]+.*:\schore' <<< "$RELEASE_NOTES" | head -n 5 | sed -E 's/(\*\s[a-f0-9]+.*):\s[^:]+:\s/\1 : /g' >> formatted_notes.txt || echo "None" >> formatted_notes.txt
-                echo "" >> formatted_notes.txt
-                
-                cat formatted_notes.txt
-                FORMATTED_NOTES=$(cat formatted_notes.txt) 
-                echo "FORMATTED_NOTES<<EOF" >> $GITHUB_ENV
-                echo "$FORMATTED_NOTES" >> $GITHUB_ENV
-                echo "EOF" >> $GITHUB_ENV
         
           - name: Send message to Discord
             env:
