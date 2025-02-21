@@ -25,15 +25,15 @@ jobs:
         id: format_notes
         run: |
           {
-            echo "**🚀 Features**"
+            echo "🚀 **Features**"
             grep -iE '^\*\s\[[a-f0-9]+\]\(.*\):\sfeat' <<< "$RELEASE_NOTES" | head -n 5 | sed -E 's/(\*\s\[[a-f0-9]+\]\(.*\)):\s[^:]+:\s/\1 : /g' || echo "None"
             echo ""
 
-            echo "**🐛 Fixes**"
+            echo "🐛 **Fixes**"
             grep -iE '^\*\s\[[a-f0-9]+\]\(.*\):\sfix' <<< "$RELEASE_NOTES" | head -n 5 | sed -E 's/(\*\s\[[a-f0-9]+\]\(.*\)):\s[^:]+:\s/\1 : /g' || echo "None"
             echo ""
 
-            echo "**🛠 Chores**"
+            echo "🛠 **Chores**"
             grep -iE '^\*\s\[[a-f0-9]+\]\(.*\):\schore' <<< "$RELEASE_NOTES" | head -n 5 | sed -E 's/(\*\s\[[a-f0-9]+\]\(.*\)):\s[^:]+:\s/\1 : /g' || echo "None"
             echo ""
           } > formatted_notes.txt
