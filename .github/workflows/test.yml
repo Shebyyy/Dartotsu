@@ -66,7 +66,7 @@ jobs:
                 TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHANNEL_ID }}
                 TELEGRAM_TOPIC: ${{ secrets.TELEGRAM_THREAD_ID }}
             run: |
-                FORMATTED_NOTES=$(echo "FORMATTED_NOTES" | sed -E 's/\): [^:]+:/) :/g')
+                FORMATTED_NOTES=$(echo "$FORMATTED_NOTES" | sed -E 's/\): [^:]+:/) :/g')
                 echo "$FORMATTED_NOTES" > markdown.txt
                 chmod +x scripts/tel_parser.sed
                 ./scripts/tel_parser.sed markdown.txt >> output.txt
