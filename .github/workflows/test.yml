@@ -89,9 +89,9 @@ jobs:
               ./scripts/tel_parser.sed TChores.txt > TChoresT.txt
               
               # Wrap parsed content with <blockquote> tags on the same line
-              feat_block="<blockquote>$(cat feat_parsed.txt)</blockquote>"
-              fixes_block="<blockquote>$(cat fixes_parsed.txt)</blockquote>"
-              chores_block="<blockquote>$(cat chores_parsed.txt)</blockquote>"
+              feat_block=$(echo -n "<blockquote>$(cat feat_parsed.txt | sed -E 's/\): [^:]+:/) :/g')</blockquote>")
+              fixes_block=$(echo -n "<blockquote>$(cat fixes_parsed.txt | sed -E 's/\): [^:]+:/) :/g')</blockquote>")
+              chores_block=$(echo -n "<blockquote>$(cat chores_parsed.txt | sed -E 's/\): [^:]+:/) :/g')</blockquote>")
               
               # Combine everything into final output (without extra lines)
               echo "$(cat TFeaturesT.txt) $feat_block $(cat TFixesT.txt) $fixes_block $(cat TChoresT.txt) $chores_block" > output.txt
