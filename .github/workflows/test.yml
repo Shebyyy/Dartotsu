@@ -87,9 +87,9 @@ jobs:
               ./scripts/tel_parser.sed feat.txt > feat_parsed.txt
               ./scripts/tel_parser.sed fixes.txt > fixes_parsed.txt
               ./scripts/tel_parser.sed chores.txt > chores_parsed.txt
-              ./scripts/tel_parser.sed TFeatures.txt > feat_parsed.txt
-              ./scripts/tel_parser.sed TFixes.txt > fixes_parsed.txt
-              ./scripts/tel_parser.sed TChores.txt > chores_parsed.txt
+              ./scripts/tel_parser.sed TFeatures.txt > TFeatures.txt
+              ./scripts/tel_parser.sed TFixes.txt > TFixes.txt
+              ./scripts/tel_parser.sed TChores.txt > TChores.txt
               
               # Add <blockquote> tags to parsed files
               echo "<blockquote>" > feat_block.txt
