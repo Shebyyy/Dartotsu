@@ -92,11 +92,11 @@ jobs:
           
                 # Preserve newlines properly inside <blockquote> without breaking Telegram formatting
                 {
-                  [ -f TFeaturesT.txt ] && cat TFeaturesT.txt && echo "<blockquote>" && cat feat_clean.txt && echo "</blockquote>"
-                  [ -f TFixesT.txt ] && cat TFixesT.txt && echo "<blockquote>" && cat fixes_clean.txt && echo "</blockquote>"
-                  [ -f TChoresT.txt ] && cat TChoresT.txt && echo "<blockquote>" && cat chores_clean.txt && echo "</blockquote>"
+                  [ -f TFeaturesT.txt ] && echo -n "$(cat TFeaturesT.txt) <blockquote>$(cat feat_clean.txt)</blockquote> "
+                  [ -f TFixesT.txt ] && echo -n "$(cat TFixesT.txt) <blockquote>$(cat fixes_clean.txt)</blockquote> "
+                  [ -f TChoresT.txt ] && echo -n "$(cat TChoresT.txt) <blockquote>$(cat chores_clean.txt)</blockquote> "
                 } > output.txt
-          
+
                 # Ensure output is not empty before sending
                 if [ ! -s output.txt ]; then
                     echo "No commits found. Skipping Telegram message."
