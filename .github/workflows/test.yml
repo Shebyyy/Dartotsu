@@ -97,11 +97,9 @@ jobs:
               echo "$(cat TFeaturesT.txt) $feat_block $(cat TFixesT.txt) $fixes_block $(cat TChoresT.txt) $chores_block" > output.txt
               
               markdown_info_tel=$(< output.txt)
-              markdown_info_tel=$(echo "$markdown_info_tel" | sed -E 's/\): [^:]+:/) :/g')
               
               echo "Final Telegram Message:"
               echo "$markdown_info_tel"
-
               
               # Send message to Telegram
               curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
