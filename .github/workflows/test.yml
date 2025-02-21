@@ -91,18 +91,10 @@ jobs:
               ./scripts/tel_parser.sed TFixes.txt > TFixesT.txt
               ./scripts/tel_parser.sed TChores.txt > TChoresT.txt
               
-              # Add <blockquote> tags to parsed files
-              echo "<blockquote>" > feat_block.txt
-              cat feat_parsed.txt >> feat_block.txt
-              echo "</blockquote>" >> feat_block.txt
-              
-              echo "<blockquote>" > fixes_block.txt
-              cat fixes_parsed.txt >> fixes_block.txt
-              echo "</blockquote>" >> fixes_block.txt
-              
-              echo "<blockquote>" > chores_block.txt
-              cat chores_parsed.txt >> chores_block.txt
-              echo "</blockquote>" >> chores_block.txt
+              # Wrap parsed content with <blockquote> tags on the same line
+              feat_block=$(echo -n "<blockquote>$(cat feat_parsed.txt)</blockquote>")
+              fixes_block=$(echo -n "<blockquote>$(cat fixes_parsed.txt)</blockquote>")
+              chores_block=$(echo -n "<blockquote>$(cat chores_parsed.txt)</blockquote>")
               
               # Combine everything into final output
               cat TFeaturesT.txt feat_block.txt TFixesT.txt fixes_block.txt TChoresT.txt chores_block.txt > output.txt
