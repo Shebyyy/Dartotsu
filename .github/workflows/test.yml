@@ -88,19 +88,27 @@ jobs:
               ./scripts/tel_parser.sed TFixes.txt > TFixesT.txt
               ./scripts/tel_parser.sed TChores.txt > TChoresT.txt
               
-              # Process commit messages (removes unwanted text) before wrapping in <blockquote>
+              # Clean commit messages with sed before block wrapping
               sed -E 's/\): [^:]+:/) :/g' feat_parsed.txt > feat_clean.txt
               sed -E 's/\): [^:]+:/) :/g' fixes_parsed.txt > fixes_clean.txt
               sed -E 's/\): [^:]+:/) :/g' chores_parsed.txt > chores_clean.txt
               
-              # Wrap parsed content with <blockquote> without breaking lines
-              feat_block=$(printf "<blockquote>%s</blockquote>" "$(cat feat_clean.txt)")
-              fixes_block=$(printf "<blockquote>%s</blockquote>" "$(cat fixes_clean.txt)")
-              chores_block=$(printf "<blockquote>%s</blockquote>" "$(cat chores_clean.txt)")
-              
-              # Combine everything into final output (without extra lines)
-              echo "$(cat TFeaturesT.txt) $feat_block $(cat TFixesT.txt) $fixes_block $(cat TChoresT.txt) $chores_block" > output.txt
-              
+              # Preserve newlines properly inside <blockquote> without breaking Telegram formatting
+              {
+                cat TFeaturesT.txt
+                echo "<blockquote>"
+                cat feat_clean.txt
+                echo "</blockquote>"
+                cat TFixesT.txt
+                echo "<blockquote>"
+                cat fixes_clean.txt
+                echo "</blockquote>"
+                cat TChoresT.txt
+                echo "<blockquote>"
+                cat chores_clean.txt
+                echo "</blockquote>"
+              } > output.txt
+                          
               markdown_info_tel=$(< output.txt)
               
               echo "Final Telegram Message:"
