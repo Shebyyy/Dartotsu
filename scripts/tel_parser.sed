@@ -1,7 +1,5 @@
 #!/bin/sed -Ef
 
-### md-to-html: Sed script that converts Markdown to Telegram HTML formatting
-
 # Remove Discord mentions
 /Discord/d
 
