@@ -38,7 +38,7 @@ jobs:
       - name: Convert Markdown to HTML
         id: convert_to_html
         run: |
-          sed -Ef Dantotsu/scripts/tel_parser.sed formatted_notes.md > formatted_notes.txt
+          sed -Ef ./Dantotsu/scripts/tel_parser.sed formatted_notes.md > formatted_notes.txt
           cat formatted_notes.txt
           FORMATTED_NOTES=$(cat formatted_notes.txt)
           echo "FORMATTED_NOTES<<EOF" >> $GITHUB_ENV
