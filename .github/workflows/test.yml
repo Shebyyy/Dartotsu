@@ -85,10 +85,10 @@ jobs:
                 ./scripts/tel_parser.sed TFixes.txt > TFixesT.txt
                 ./scripts/tel_parser.sed TChores.txt > TChoresT.txt
           
-                # Remove "None" from empty sections
-                [ "$(cat feat_clean.txt)" = "None" ] && rm -f feat_clean.txt TFeaturesT.txt
-                [ "$(cat fixes_clean.txt)" = "None" ] && rm -f fixes_clean.txt TFixesT.txt
-                [ "$(cat chores_clean.txt)" = "None" ] && rm -f chores_clean.txt TChoresT.txt
+                # Remove "None" from empty sections and delete the heading if no commits exist
+                 [ "$(cat feat_clean.txt)" = "None" ] && sed -i '/\*\*🚀 Features\*\*/d' formatted_notes.txt && rm -f feat_clean.txt TFeaturesT.txt
+                 [ "$(cat fixes_clean.txt)" = "None" ] && sed -i '/\*\*🐛 Fixes\*\*/d' formatted_notes.txt && rm -f fixes_clean.txt TFixesT.txt
+                 [ "$(cat chores_clean.txt)" = "None" ] && sed -i '/\*\*🛠 Chores\*\*/d' formatted_notes.txt && rm -f chores_clean.txt TChoresT.txt
           
                 # Preserve newlines properly inside <blockquote> without breaking Telegram formatting
                 {
