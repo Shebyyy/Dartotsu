@@ -88,10 +88,15 @@ jobs:
               ./scripts/tel_parser.sed TFixes.txt > TFixesT.txt
               ./scripts/tel_parser.sed TChores.txt > TChoresT.txt
               
-              # Wrap parsed content with <blockquote> tags on the same line
-              feat_block=$(echo -n "<blockquote>$(cat feat_parsed.txt | sed -E 's/\): [^:]+:/) :/g')</blockquote>")
-              fixes_block=$(echo -n "<blockquote>$(cat fixes_parsed.txt | sed -E 's/\): [^:]+:/) :/g')</blockquote>")
-              chores_block=$(echo -n "<blockquote>$(cat chores_parsed.txt | sed -E 's/\): [^:]+:/) :/g')</blockquote>")
+              # Process commit messages (removes unwanted text) before wrapping in <blockquote>
+              sed -E 's/\): [^:]+:/) :/g' feat_parsed.txt > feat_clean.txt
+              sed -E 's/\): [^:]+:/) :/g' fixes_parsed.txt > fixes_clean.txt
+              sed -E 's/\): [^:]+:/) :/g' chores_parsed.txt > chores_clean.txt
+              
+              # Wrap parsed content with <blockquote> without breaking lines
+              feat_block=$(printf "<blockquote>%s</blockquote>" "$(cat feat_clean.txt)")
+              fixes_block=$(printf "<blockquote>%s</blockquote>" "$(cat fixes_clean.txt)")
+              chores_block=$(printf "<blockquote>%s</blockquote>" "$(cat chores_clean.txt)")
               
               # Combine everything into final output (without extra lines)
               echo "$(cat TFeaturesT.txt) $feat_block $(cat TFixesT.txt) $fixes_block $(cat TChoresT.txt) $chores_block" > output.txt
