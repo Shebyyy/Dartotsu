@@ -16,14 +16,12 @@ jobs:
             run: |
                 RELEASE_DATA=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
                 "https://api.github.com/repos/grayankit/DantotsuRe/releases/latest")
-
                 RELEASE_NOTES=$(echo "$RELEASE_DATA" | jq -r '.body')
                 echo "Release Notes: $RELEASE_NOTES"
                 
                 echo "RELEASE_NOTES<<EOF" >> $GITHUB_ENV
                 echo "$RELEASE_NOTES" >> $GITHUB_ENV
                 echo "EOF" >> $GITHUB_ENV
-
           - name: Format Release Notes
             id: format_notes
             run: |
@@ -59,23 +57,22 @@ jobs:
                     -X POST \
                     -d "$JSON_PAYLOAD" \
                     $DISCORD_WEBHOOK_URL
-
-
           - name: Send message to Telegram
             env:
                 TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
                 TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHANNEL_ID }}
                 TELEGRAM_TOPIC: ${{ secrets.TELEGRAM_THREAD_ID }}
             run: |
-              # Extract Features, Fixes, and Chores into separate files
+              # Extract Features, Fixes, and Chores into separate files (with cleaning)
               echo "**🚀 Features**" > TFeatures.txt
-              echo "$(echo "$FORMATTED_NOTES" | grep -iE '^\*\s\[[a-f0-9]+\]\(.*\):\sfeat' | head -n 5 || echo 'None')" > feat.txt
+              echo "$(echo "$FORMATTED_NOTES" | grep -iE '^\*\s\[[a-f0-9]+\]\(.*\):\sfeat' | sed -E 's/\): [^:]+:/) :/g' | head -n 5 || echo 'None')" > feat.txt
               
               echo "**🐛 Fixes**" > TFixes.txt
-              echo "$(echo "$FORMATTED_NOTES" | grep -iE '^\*\s\[[a-f0-9]+\]\(.*\):\sfix' | head -n 5 || echo 'None')" > fixes.txt
+              echo "$(echo "$FORMATTED_NOTES" | grep -iE '^\*\s\[[a-f0-9]+\]\(.*\):\sfix' | sed -E 's/\): [^:]+:/) :/g' | head -n 5 || echo 'None')" > fixes.txt
               
               echo "**🛠 Chores**" > TChores.txt
-              echo "$(echo "$FORMATTED_NOTES" | grep -iE '^\*\s\[[a-f0-9]+\]\(.*\):\schore' | head -n 5 || echo 'None')" > chores.txt
+              echo "$(echo "$FORMATTED_NOTES" | grep -iE '^\*\s\[[a-f0-9]+\]\(.*\):\schore' | sed -E 's/\): [^:]+:/) :/g' | head -n 5 || echo 'None')" > chores.txt
+
               
               # Ensure the script is executable
               chmod +x scripts/tel_parser.sed
@@ -88,27 +85,14 @@ jobs:
               ./scripts/tel_parser.sed TFixes.txt > TFixesT.txt
               ./scripts/tel_parser.sed TChores.txt > TChoresT.txt
               
-              # Clean commit messages with sed before block wrapping
-              sed -E 's/\): [^:]+:/) :/g' feat_parsed.txt > feat_clean.txt
-              sed -E 's/\): [^:]+:/) :/g' fixes_parsed.txt > fixes_clean.txt
-              sed -E 's/\): [^:]+:/) :/g' chores_parsed.txt > chores_clean.txt
+              # Wrap parsed content with <blockquote> tags on the same line
+              feat_block="<blockquote>$(cat feat_parsed.txt)</blockquote>"
+              fixes_block="<blockquote>$(cat fixes_parsed.txt)</blockquote>"
+              chores_block="<blockquote>$(cat chores_parsed.txt)</blockquote>"
               
-              # Preserve newlines properly inside <blockquote> without breaking Telegram formatting
-              {
-                cat TFeaturesT.txt
-                echo "<blockquote>"
-                cat feat_clean.txt
-                echo "</blockquote>"
-                cat TFixesT.txt
-                echo "<blockquote>"
-                cat fixes_clean.txt
-                echo "</blockquote>"
-                cat TChoresT.txt
-                echo "<blockquote>"
-                cat chores_clean.txt
-                echo "</blockquote>"
-              } > output.txt
-                          
+              # Combine everything into final output (without extra lines)
+              echo "$(cat TFeaturesT.txt) $feat_block $(cat TFixesT.txt) $fixes_block $(cat TChoresT.txt) $chores_block" > output.txt
+              
               markdown_info_tel=$(< output.txt)
               
               echo "Final Telegram Message:"
