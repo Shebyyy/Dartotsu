@@ -65,8 +65,13 @@ jobs:
                 TELEGRAM_TOPIC: ${{ secrets.TELEGRAM_THREAD_ID }}
             run: |
                 # Extract Features, Fixes, and Chores into separate files (with cleaning)
+                echo "**🚀 Features**" > TFeatures.txt
                 echo "$(echo "$FORMATTED_NOTES" | grep -iE '^\*\s\[[a-f0-9]+\]\(.*\):\sfeat' | sed -E 's/\): [^:]+:/) :/g' | head -n 5 || echo 'None')" > feat.txt
+                
+                echo "**🐛 Fixes**" > TFixes.txt
                 echo "$(echo "$FORMATTED_NOTES" | grep -iE '^\*\s\[[a-f0-9]+\]\(.*\):\sfix' | sed -E 's/\): [^:]+:/) :/g' | head -n 5 || echo 'None')" > fixes.txt
+                
+                echo "**🛠 Chores**" > TChores.txt
                 echo "$(echo "$FORMATTED_NOTES" | grep -iE '^\*\s\[[a-f0-9]+\]\(.*\):\schore' | sed -E 's/\): [^:]+:/) :/g' | head -n 5 || echo 'None')" > chores.txt
           
                 # Ensure the script is executable
