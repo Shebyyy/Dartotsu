@@ -69,7 +69,7 @@ jobs:
                 echo "$(echo "$FORMATTED_NOTES" | grep -iE '^\*\s\[[a-f0-9]+\]\(.*\):\sfeat' | sed -E 's/\): [^:]+:/) :/g' | head -n 5 || echo 'None')" > feat.txt
                 
                 echo "**🐛 Fixes**" > TFixes.txt
-                echo "$(echo "" | grep -iE '^\*\s\[[a-f0-9]+\]\(.*\):\sfix' | sed -E 's/\): [^:]+:/) :/g' | head -n 5 || echo 'None')" > fixes.txt
+                echo "$(echo "$FORMATTED_NOTES" | grep -iE '^\*\s\[[a-f0-9]+\]\(.*\):\sfix' | sed -E 's/\): [^:]+:/) :/g' | head -n 5 || echo 'None')" > fixes.txt
                 
                 echo "**🛠 Chores**" > TChores.txt
                 echo "$(echo "$FORMATTED_NOTES" | grep -iE '^\*\s\[[a-f0-9]+\]\(.*\):\schore' | sed -E 's/\): [^:]+:/) :/g' | head -n 5 || echo 'None')" > chores.txt
