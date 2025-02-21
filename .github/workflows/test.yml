@@ -87,9 +87,9 @@ jobs:
               ./scripts/tel_parser.sed feat.txt > feat_parsed.txt
               ./scripts/tel_parser.sed fixes.txt > fixes_parsed.txt
               ./scripts/tel_parser.sed chores.txt > chores_parsed.txt
-              ./scripts/tel_parser.sed TFeatures.txt > TFeatures.txt
-              ./scripts/tel_parser.sed TFixes.txt > TFixes.txt
-              ./scripts/tel_parser.sed TChores.txt > TChores.txt
+              ./scripts/tel_parser.sed TFeatures.txt > TFeaturesT.txt
+              ./scripts/tel_parser.sed TFixes.txt > TFixesT.txt
+              ./scripts/tel_parser.sed TChores.txt > TChoresT.txt
               
               # Add <blockquote> tags to parsed files
               echo "<blockquote>" > feat_block.txt
@@ -105,7 +105,7 @@ jobs:
               echo "</blockquote>" >> chores_block.txt
               
               # Combine everything into final output
-              cat TFeatures.txt feat_block.txt TFixes.txt fixes_block.txt TChores.txt chores_block.txt > output.txt
+              cat TFeaturesT.txt feat_block.txt TFixesT.txt fixes_block.txt TChoresT.txt chores_block.txt > output.txt
               
               markdown_info_tel=$(< output.txt)
               
