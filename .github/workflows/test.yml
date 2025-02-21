@@ -32,21 +32,22 @@ jobs:
             echo "🛠 **Chores**"
             grep -iE '^\*\s\[[a-f0-9]+\]\(.*\):\schore' <<< "$RELEASE_NOTES" | head -n 5 | sed -E 's/(\*\s\[[a-f0-9]+\]\(.*\)):\s[^:]+:\s/\1 : /g' || echo "None"
             echo ""
-          } > formatted_notes.md
-          cat formatted_notes.md
-
-      - name: Convert Markdown to HTML
-        id: convert_to_html
-        run: |
-          sed -Ef ./Dantotsu/scripts/tel_parser.sed formatted_notes.md > formatted_notes.txt
+          } > formatted_notes.txt
           cat formatted_notes.txt
-          FORMATTED_NOTES=$(cat formatted_notes.txt)
-          echo "FORMATTED_NOTES<<EOF" >> $GITHUB_ENV
-          echo "$FORMATTED_NOTES" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
 
       - name: Send Release Notes to Telegram
         run: |
+          cat formatted_notes.txt
+          FORMATTED_NOTES=$(cat formatted_notes.txt)
+          echo "$FORMATTED_NOTES" > dev_info.txt
+          # making the file executable
+          chmod +x scripts/tel_parser.sed
+          ./scripts/tel_parser.sed dev_info.txt >> output.txt
+          dev_info_tel=$(< output.txt)
+
+          telegram_dev_info="<blockquote>${dev_info_tel}</blockquote>"
+          echo "$telegram_dev_info"
+          
           curl -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
             -H "Content-Type: application/json" \
             -d @<(jq -n --arg chat_id "${{ secrets.TELEGRAM_CHANNEL_ID }}" \
