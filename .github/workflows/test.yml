@@ -87,6 +87,9 @@ jobs:
               ./scripts/tel_parser.sed feat.txt > feat_parsed.txt
               ./scripts/tel_parser.sed fixes.txt > fixes_parsed.txt
               ./scripts/tel_parser.sed chores.txt > chores_parsed.txt
+              ./scripts/tel_parser.sed Tfeat.txt > feat_parsed.txt
+              ./scripts/tel_parser.sed Tfixes.txt > fixes_parsed.txt
+              ./scripts/tel_parser.sed Tchores.txt > chores_parsed.txt
               
               # Add <blockquote> tags to parsed files
               echo "<blockquote>" > feat_block.txt
@@ -116,15 +119,3 @@ jobs:
                   -d "text=$markdown_info_tel" \
                   -d "parse_mode=HTML" \
                   -d "disable_web_page_preview=true"
-
-                markdown_info_tel=$(< output.txt)
-
-                echo "$markdown_info_tel"
-            
-                # Send message to Telegram
-                curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
-                    -d "chat_id=$TELEGRAM_CHAT_ID" \
-                    -d "message_thread_id=$TELEGRAM_TOPIC" \
-                    -d "text=$markdown_info_tel" \
-                    -d "parse_mode=HTML" \
-                    -d "disable_web_page_preview=true"
