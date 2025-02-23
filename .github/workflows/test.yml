@@ -45,7 +45,7 @@ jobs:
             id: get_release_notes
             run: |
               RELEASE_DATA=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-              "https://api.github.com/repos/${{ github.repository }}/releases/latest")
+              "https://api.github.com/repos/aayush2622/Dartotsu/releases/latest")
       
               RELEASE_NOTES=$(echo "$RELEASE_DATA" | jq -r '.body')
               echo "Release Notes: $RELEASE_NOTES"
