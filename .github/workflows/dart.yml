@@ -103,22 +103,6 @@ jobs:
           echo "org.gradle.parallel=true" >> ~/.gradle/gradle.properties
           echo "org.gradle.caching=true" >> ~/.gradle/gradle.properties
       
-      - run: flutter pub get
-      - run: flutter build apk --release
-
-      - name: Rename APK
-        run: mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/Dantotsu_Android_${{github.ref_name}}.apk
-
-      - name: Upload File To Google Drive
-        id: gdriveUpload
-        uses: hoatruongdev09/google-drive-file-upload-github-action@v1.1
-        with:
-          file-path: build/app/outputs/flutter-apk/Dantotsu_Android_${{github.ref_name}}.apk
-          upload-name: Dartotsu.apk
-          upload-to-folder-id: 1_BIXdURNlwRfVQJJB142TI1J7jVf69-2
-          service-account-json: "${{secrets.GOOGLE_KEY}}"
-          overrwrite: true
-
       # Optimize Flutter build
       - run: flutter clean
       - run: flutter pub get
