@@ -653,3 +653,7 @@ jobs:
           bodyFile: CHANGELOG.md
           tag: ${{ env.TAG }}
           allowUpdates: true
+
+  ios-source-build:
+    needs: build_ios
+    uses: ./.github/workflows/update_sideloading_source.yml
