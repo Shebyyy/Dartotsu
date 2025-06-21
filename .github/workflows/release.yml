@@ -692,15 +692,14 @@ jobs:
           fi
 
           # ✅ Append checksum table to CHANGELOG.md
-            echo -e "\n### 🔒 Checksums\n" >> CHANGELOG.md
-            echo "| File | SHA-256 |" >> CHANGELOG.md
-            echo "|------|---------|" >> CHANGELOG.md
-            
-            for file in *; do
-              [ -f "$file" ] || continue
-              hash=$(sha256sum "$file" | cut -d ' ' -f1)
-              echo "| $file | $hash |" >> CHANGELOG.md
-            done
+          echo -e "\n### 🔒 Checksums\n" >> CHANGELOG.md
+          echo "| File | SHA-256 |" >> CHANGELOG.md
+          echo "|------|---------|" >> CHANGELOG.md
+          
+          find build -type f | while read -r file; do
+            hash=$(sha256sum "$file" | cut -d ' ' -f1)
+            echo "| $file | $hash |" >> CHANGELOG.md
+          done
 
       - name: Commit and push changelog
         run: |
