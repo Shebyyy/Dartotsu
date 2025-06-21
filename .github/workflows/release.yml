@@ -691,6 +691,17 @@ jobs:
             echo -e "$CHORES" >> CHANGELOG.md
           fi
 
+          # ✅ Append checksum table to CHANGELOG.md
+            echo -e "\n### 🔒 Checksums\n" >> CHANGELOG.md
+            echo "| File | SHA-256 |" >> CHANGELOG.md
+            echo "|------|---------|" >> CHANGELOG.md
+            
+            for file in *; do
+              [ -f "$file" ] || continue
+              hash=$(sha256sum "$file" | cut -d ' ' -f1)
+              echo "| $file | $hash |" >> CHANGELOG.md
+            done
+
       - name: Commit and push changelog
         run: |
           git config --global user.name "GitHub Actions"
