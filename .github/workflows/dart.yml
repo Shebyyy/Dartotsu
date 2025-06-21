@@ -743,8 +743,31 @@ jobs:
           curl -H "Content-Type: application/json" \
                -d "{\"content\": \"${APK_MESSAGE}\n${WINDOWS_MESSAGE}\n${LINUX_MESSAGE}\n${IOS_MESSAGE}\n${MACOS_MESSAGE}\"}" \
                "${{ secrets.DISCORD_WEBHOOK_URL }}"
+               
       - name: Send Telegram Notification
         run: |
+          # Check if any download links are available
+          HAS_LINKS=""
+          if [[ -n "${{ env.apk_message }}" ]]; then
+            HAS_LINKS="true"
+          fi
+          if [[ -n "${{ env.windows_message }}" ]]; then
+            HAS_LINKS="true"
+          fi
+          if [[ -n "${{ env.linux_message }}" ]]; then
+            HAS_LINKS="true"
+          fi
+          if [[ -n "${{ env.ios_message }}" ]]; then
+            HAS_LINKS="true"
+          fi
+          if [[ -n "${{ env.macos_message }}" ]]; then
+            HAS_LINKS="true"
+          fi
+          
+          # Only send notification if there are download links
+          if [[ "$HAS_LINKS" == "true" ]]; then
+            echo "Sending Telegram notification with download links..."
+        
           response=$(curl -sS -f -X POST \
               "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKKEN}}/sendMessage" \
               -F "chat_id=${{ secrets.TELEGRAM_CHANNEL_ID}}" \
