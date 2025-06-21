@@ -767,7 +767,7 @@ jobs:
           # Only send notification if there are download links
           if [[ "$HAS_LINKS" == "true" ]]; then
             echo "Sending Telegram notification with download links..."
-        
+      
           response=$(curl -sS -f -X POST \
               "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKKEN}}/sendMessage" \
               -F "chat_id=${{ secrets.TELEGRAM_CHANNEL_ID}}" \
