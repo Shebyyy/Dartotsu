@@ -749,19 +749,24 @@ jobs:
           MESSAGE="🎉 *Build Notification* 🎉"
       
           if [[ -n "${{ env.apk_message }}" ]]; then
-            MESSAGE="$MESSAGE\n${{ env.apk_message }}"
+            MESSAGE="$MESSAGE
+            ${{ env.apk_message }}"
           fi
           if [[ -n "${{ env.windows_message }}" ]]; then
-            MESSAGE="$MESSAGE\n${{ env.windows_message }}"
+            MESSAGE="$MESSAGE
+            ${{ env.windows_message }}"
           fi
           if [[ -n "${{ env.linux_message }}" ]]; then
-            MESSAGE="$MESSAGE\n${{ env.linux_message }}"
+            MESSAGE="$MESSAGE
+            ${{ env.linux_message }}"
           fi
           if [[ -n "${{ env.ios_message }}" ]]; then
-            MESSAGE="$MESSAGE\n${{ env.ios_message }}"
+            MESSAGE="$MESSAGE
+            ${{ env.ios_message }}"
           fi
           if [[ -n "${{ env.macos_message }}" ]]; then
-            MESSAGE="$MESSAGE\n${{ env.macos_message }}"
+            MESSAGE="$MESSAGE
+            ${{ env.macos_message }}"
           fi
       
           if [[ "$MESSAGE" != "🎉 *Build Notification* 🎉" ]]; then
