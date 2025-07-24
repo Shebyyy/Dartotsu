@@ -30,10 +30,11 @@
 </div>
 
 <p align="right">
-  <a href="https://deepwiki.com/aayush2622/Dartotsu">
+  <a href="https://deepwiki.com/aayush2622/Dartotsu" target="_blank" rel="noopener noreferrer">
     <img src="https://img.shields.io/badge/View%20on-DeepWiki-blueviolet?style=flat-square&logo=read-the-docs&logoColor=white" />
   </a>
 </p>
+
 
 <p align="center">
    <img src="https://files.catbox.moe/mdn05t.png" alt="Dartotsu Banner" width="100%">
