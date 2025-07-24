@@ -86,14 +86,16 @@ Join our communities to stay updated and contribute to the discussion
 ## Contribute
 We welcome contributions, from translations to new features. For inquiries, join our [Discord server](https://discord.gg/eyQdCpdubF) or [Telegram group](https://t.me/Dartotsu). Pull requests are welcome; check the [open issues](https://github.com/aayush2622/Dartotsu/issues) for guidance on major changes.
 
-📘 **Want to understand the structure or contribute more efficiently?**  
-Check the full project documentation on **DeepWiki** for helpful guides and technical insights.
-
-<p align="left">
+<details>
+  <summary>📘 View Full Project Documentation (DeepWiki)</summary>
+  <p>
+    Access detailed technical documentation, usage guides, and contributor notes on  
+    <a href="https://deepwiki.com/aayush2622/Dartotsu" target="_blank" rel="noopener noreferrer"><strong>DeepWiki</strong></a>.
+  </p>
   <a href="https://deepwiki.com/aayush2622/Dartotsu" target="_blank" rel="noopener noreferrer">
-    <img src="https://img.shields.io/badge/View%20Full%20Docs%20on-DeepWiki-blueviolet?style=flat-square&logo=read-the-docs&logoColor=white" />
+    <img src="https://img.shields.io/badge/Open%20on-DeepWiki-blueviolet?style=for-the-badge&logo=read-the-docs&logoColor=white" alt="View on DeepWiki"/>
   </a>
-</p>
+</details>
 
 ### Translation
 You can help us by translating the app into your language here
