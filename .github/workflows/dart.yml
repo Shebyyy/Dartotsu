@@ -587,6 +587,7 @@ jobs:
           additional_info["ibo"]="\n Discord: <@951737931159187457>\n AniList: [takarealist112](<https://anilist.co/user/5790266/>)"
           additional_info["aayush262"]="\n Discord: <@918825160654598224>\n AniList: [aayush262](<https://anilist.co/user/5144645/>)"
           additional_info["Ankit Grai"]="\n Discord: <@1125628254330560623>\n AniList: [bheshnarayan](<https://anilist.co/user/6417303/>)\n X: [grayankit01](<https://x.com/grayankit01>)"
+          additional_info["Shebyyy"]="\n Discord: <@612532963938271232>\n AniList: [ASheby](<https://anilist.co/user/5724017/>)"
           # Decimal color codes for contributors
           declare -A contributor_colors
           default_color="#1ac4c5"
@@ -594,6 +595,7 @@ jobs:
           contributor_colors["Sadwhy"]="#ff7e95"
           contributor_colors["grayankit"]="#c51aa1"
           contributor_colors["rebelonion"]="#d4e5ed"
+          contributor_colors["Shebyyy"]="#5d689d"
           hex_to_decimal() { printf '%d' "0x${1#"#"}"; }
 
           # Count recent commits and create an associative array
@@ -609,7 +611,7 @@ jobs:
           # Fetch contributors from GitHub
           contributors=$(curl -L \
           -H "Accept: application/vnd.github+json" \
-          -H "Authorization: Bearer ${{secrets.FINE_GRAIN_TOKEN}}" \
+          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
           -H "X-GitHub-Api-Version: 2022-11-28" \
           https://api.github.com/repos/${{github.repository}}/contributors)
           echo "Debug: Contributors response:"
