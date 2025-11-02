@@ -31,6 +31,12 @@ jobs:
       
       - name: Check build triggers
         id: check
+        env:
+          STABLE_ROLE: ${{ secrets.DISCORD_STABLE_ROLE }}
+          BETA_ROLE: ${{ secrets.DISCORD_BETA_ROLE }}
+          ALPHA_ROLE: ${{ secrets.DISCORD_ALPHA_ROLE }}
+          STABLE_CHANNEL: ${{ secrets.DISCORD_STABLE_CHANNEL }}
+          ALPHA_CHANNEL: ${{ secrets.DISCORD_ALPHA_CHANNEL }}
         run: |
           MSG="${{ github.event.head_commit.message }}"
           IS_TAG=${{ startsWith(github.ref, 'refs/tags/') }}
@@ -40,20 +46,20 @@ jobs:
             if [[ "${{ github.ref }}" == *"beta"* ]]; then
               echo "is_release=true" >> $GITHUB_OUTPUT
               echo "is_beta=true" >> $GITHUB_OUTPUT
-              echo "discord_channel=1298998028006330388" >> $GITHUB_OUTPUT
-              echo "ping_role=<@&1324799528255225997>" >> $GITHUB_OUTPUT
+              echo "discord_channel=$STABLE_CHANNEL" >> $GITHUB_OUTPUT
+              echo "ping_role=<@&$BETA_ROLE>" >> $GITHUB_OUTPUT
             else
               echo "is_release=true" >> $GITHUB_OUTPUT
               echo "is_beta=false" >> $GITHUB_OUTPUT
-              echo "discord_channel=1298998028006330388" >> $GITHUB_OUTPUT
-              echo "ping_role=<@&1298977336124903457>" >> $GITHUB_OUTPUT
+              echo "discord_channel=$STABLE_CHANNEL" >> $GITHUB_OUTPUT
+              echo "ping_role=<@&$STABLE_ROLE>" >> $GITHUB_OUTPUT
             fi
           else
             echo "is_release=false" >> $GITHUB_OUTPUT
             echo "is_beta=false" >> $GITHUB_OUTPUT
-            echo "discord_channel=1298925412402991185" >> $GITHUB_OUTPUT
+            echo "discord_channel=$ALPHA_CHANNEL" >> $GITHUB_OUTPUT
             if [[ "$MSG" == *"[Ping]"* ]]; then
-              echo "ping_role=<@&1434448534450606090>" >> $GITHUB_OUTPUT
+              echo "ping_role=<@&$ALPHA_ROLE>" >> $GITHUB_OUTPUT
             else
               echo "ping_role=noPing" >> $GITHUB_OUTPUT
             fi
