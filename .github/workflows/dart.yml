@@ -7,7 +7,7 @@ on:
       - 'v*-beta*'
 
 env:
-  FLUTTER_VERSION: '3.35.7'
+  FLUTTER_VERSION: '3.32.5'
   JAVA_VERSION: '17'
   CMAKE_VERSION: '3.18.1'
 
@@ -465,8 +465,14 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Download last SHA artifact
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          workflow: dart.yml
+          name: last-sha
+        continue-on-error: true
+
       - name: Get commit history
-        id: commits
         run: |
           if [ -f last_sha.txt ]; then
             LAST_SHA=$(cat last_sha.txt)
@@ -476,10 +482,11 @@ jobs:
           
           COMMIT_LOGS=$(git log $LAST_SHA..HEAD --pretty=format:"● %s ~%an [֍](https://github.com/${{ github.repository }}/commit/%H)" --max-count=10)
           COMMIT_LOGS="${COMMIT_LOGS//'%'/'%25'}"
-          COMMIT_LOGS="${COMMIT_LOGS//$'\n'/'%0A'}"
-          COMMIT_LOGS="${COMMIT_LOGS//$'\r'/'%0D'}"
+          COMMIT_LOGS="${COMMIT_LOGS//\n'/'%0A'}"
+          COMMIT_LOGS="${COMMIT_LOGS//\r'/'%0D'}"
           echo "COMMIT_LOG=${COMMIT_LOGS}" >> $GITHUB_ENV
           echo "${{ github.sha }}" > last_sha.txt
+        continue-on-error: true
 
       - name: Upload SHA artifact
         uses: actions/upload-artifact@v4
@@ -487,7 +494,8 @@ jobs:
           name: last-sha
           path: last_sha.txt
 
-      - name: Send Discord notification
+      - name: Send Discord notification with fancy embed
+        if: needs.setup.outputs.discord_channel != ''
         env:
           WEBHOOK_URL: ${{ needs.setup.outputs.discord_channel }}
           PING_ROLE: ${{ needs.setup.outputs.ping_role }}
@@ -495,13 +503,116 @@ jobs:
           IS_RELEASE: ${{ needs.setup.outputs.is_release }}
           IS_BETA: ${{ needs.setup.outputs.is_beta }}
         run: |
-          # Build download links
-          DOWNLOADS=""
-          [[ -n "${{ needs.build_android.outputs.apk_link }}" ]] && DOWNLOADS+="[📱 Android APK](https://drive.google.com/drive/folders/1S4QzdKz7ZofhiF5GAvjMdBvYK7YhndKM)\n"
-          [[ -n "${{ needs.build_windows.outputs.installer_link }}" ]] && DOWNLOADS+="[🪟 Windows Installer](${{ needs.build_windows.outputs.installer_link }})\n"
-          [[ -n "${{ needs.build_linux.outputs.zip_link }}" ]] && DOWNLOADS+="[🐧 Linux ZIP](${{ needs.build_linux.outputs.zip_link }})\n"
-          [[ -n "${{ needs.build_ios.outputs.ipa_link }}" ]] && DOWNLOADS+="[🍎 iOS IPA](${{ needs.build_ios.outputs.ipa_link }})\n"
-          [[ -n "${{ needs.build_macos.outputs.dmg_link }}" ]] && DOWNLOADS+="[💻 macOS DMG](${{ needs.build_macos.outputs.dmg_link }})\n"
+          # Fetch user details function
+          fetch_user_details() {
+            local login=$1
+            user_details=$(curl -s "https://api.github.com/users/$login")
+            name=$(echo "$user_details" | jq -r '.name // .login')
+            login=$(echo "$user_details" | jq -r '.login')
+            avatar_url=$(echo "$user_details" | jq -r '.avatar_url')
+            echo "$name|$login|$avatar_url"
+          }
+
+          # Additional information for contributors
+          declare -A additional_info
+          additional_info["ibo"]="\n Discord: <@951737931159187457>\n AniList: [takarealist112](<https://anilist.co/user/5790266/>)"
+          additional_info["aayush262"]="\n Discord: <@918825160654598224>\n AniList: [aayush262](<https://anilist.co/user/5144645/>)"
+          additional_info["Ankit Grai"]="\n Discord: <@1125628254330560623>\n AniList: [bheshnarayan](<https://anilist.co/user/6417303/>)\n X: [grayankit01](<https://x.com/grayankit01>)"
+
+          # Color codes for contributors
+          declare -A contributor_colors
+          default_color="#1ac4c5"
+          contributor_colors["aayush262"]="#ff7eb6"
+          contributor_colors["Sadwhy"]="#ff7e95"
+          contributor_colors["grayankit"]="#c51aa1"
+          contributor_colors["rebelonion"]="#d4e5ed"
+          
+          hex_to_decimal() { printf '%d' "0x${1#"#"}"; }
+
+          # Count recent commits
+          declare -A recent_commit_counts
+          while read -r count name; do
+              recent_commit_counts["$name"]=$count
+          done < <(echo "$COMMIT_LOG" | sed 's/%0A/\n/g' | grep -oP '(?<=~)[^[]*' | sort | uniq -c | sort -rn)
+
+          # Fetch contributors from GitHub
+          contributors=$(curl -s -L \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            https://api.github.com/repos/${{ github.repository }}/contributors)
+
+          # Sort contributors by recent commits
+          sorted_contributors=$(for login in $(echo "$contributors" | jq -r '.[].login'); do
+              user_info=$(fetch_user_details "$login")
+              name=$(echo "$user_info" | cut -d'|' -f1)
+              count=${recent_commit_counts["$name"]:-0}
+              echo "$count|$login"
+          done | sort -rn | cut -d'|' -f2)
+
+          # Build developer list
+          developers=""
+          max_commits=0
+          top_contributors=()
+          top_contributor_avatar=""
+          embed_color=$(hex_to_decimal "$default_color")
+
+          while read -r login; do
+            user_info=$(fetch_user_details "$login")
+            name=$(echo "$user_info" | cut -d'|' -f1)
+            login=$(echo "$user_info" | cut -d'|' -f2)
+            avatar_url=$(echo "$user_info" | cut -d'|' -f3)
+
+            commit_count=${recent_commit_counts["$name"]:-0}
+            if [ $commit_count -gt 0 ]; then
+              # Update top contributor
+              if [ $commit_count -gt $max_commits ]; then
+                max_commits=$commit_count
+                top_contributors=("$login")
+                top_contributor_avatar="$avatar_url"
+                embed_color=$(hex_to_decimal "${contributor_colors[$name]:-$default_color}")
+              elif [ $commit_count -eq $max_commits ]; then
+                top_contributors+=("$login")
+                embed_color=$(hex_to_decimal "$default_color")
+              fi
+
+              # Get total branch commits
+              branch_commit_count=$(git log --author="$login" --author="$name" --oneline | awk '!seen[$0]++' | wc -l)
+
+              extra_info="${additional_info[$name]}"
+              if [ -n "$extra_info" ]; then
+                extra_info=$(echo "$extra_info" | sed 's/\\n/\n- /g')
+              fi
+
+              developer_entry="◗ **${name}** ${extra_info}
+          - Github: [${login}](https://github.com/${login})
+          - Commits: ${branch_commit_count}"
+
+              if [ -n "$developers" ]; then
+                developers="${developers}
+          ${developer_entry}"
+              else
+                developers="${developer_entry}"
+              fi
+            fi
+          done <<< "$sorted_contributors"
+
+          # Set thumbnail
+          if [ ${#top_contributors[@]} -eq 1 ]; then
+            thumbnail_url="$top_contributor_avatar"
+          else
+            thumbnail_url="https://i.imgur.com/qt1ixRk.gif"
+            embed_color=$(hex_to_decimal "$default_color")
+          fi
+
+          # Truncate if needed
+          max_length=1000
+          commit_messages=$(echo "$COMMIT_LOG" | sed 's/%0A/\n/g; s/^/\n/')
+          if [ ${#developers} -gt $max_length ]; then
+            developers="${developers:0:$max_length}... (truncated)"
+          fi
+          if [ ${#commit_messages} -gt $max_length ]; then
+            commit_messages="${commit_messages:0:$max_length}... (truncated)"
+          fi
 
           # Determine title
           if [[ "$IS_RELEASE" == "true" ]]; then
@@ -511,21 +622,64 @@ jobs:
               TITLE="🎉 New Stable Release - v$VERSION"
             fi
           else
-            TITLE="🔥 New Alpha Build"
+            TITLE="🔥 New Alpha-Build dropped"
           fi
 
-          # Send notification
-          curl -H "Content-Type: application/json" -d "{
-            \"content\": \"$PING_ROLE\",
-            \"embeds\": [{
-              \"title\": \"$TITLE\",
-              \"description\": \"$DOWNLOADS\",
-              \"color\": 1753341,
-              \"fields\": [{
-                \"name\": \"Recent Changes\",
-                \"value\": \"$(echo "$COMMIT_LOG" | sed 's/%0A/\\n/g')\"
+          # Send main embed
+          discord_data=$(jq -nc \
+            --arg field_value "$commit_messages" \
+            --arg author_value "$developers" \
+            --arg footer_text "Version $VERSION" \
+            --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)" \
+            --arg thumbnail_url "$thumbnail_url" \
+            --arg embed_color "$embed_color" \
+            --arg title "$TITLE" \
+            --arg ping "$PING_ROLE" \
+            '{
+              "content": $ping,
+              "embeds": [{
+                "title": $title,
+                "color": ($embed_color | tonumber),
+                "fields": [
+                  {
+                    "name": "Commits:",
+                    "value": $field_value,
+                    "inline": true
+                  },
+                  {
+                    "name": "Developers:",
+                    "value": $author_value,
+                    "inline": false
+                  }
+                ],
+                "footer": {"text": $footer_text},
+                "timestamp": $timestamp,
+                "thumbnail": {"url": $thumbnail_url}
               }],
-              \"footer\": {\"text\": \"Version $VERSION\"},
-              \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%S.000Z)\"
-            }]
-          }" "$WEBHOOK_URL"
+              "attachments": []
+            }')
+
+          curl -H "Content-Type: application/json" -d "$discord_data" "$WEBHOOK_URL"
+
+      - name: Send download links
+        if: needs.setup.outputs.discord_channel != ''
+        env:
+          WEBHOOK_URL: ${{ needs.setup.outputs.discord_channel }}
+          APK_LINK: ${{ needs.build_android.outputs.apk_link }}
+          WINDOWS_LINK: ${{ needs.build_windows.outputs.installer_link }}
+          LINUX_LINK: ${{ needs.build_linux.outputs.zip_link }}
+          IOS_LINK: ${{ needs.build_ios.outputs.ipa_link }}
+          MACOS_LINK: ${{ needs.build_macos.outputs.dmg_link }}
+        run: |
+          DOWNLOADS=""
+          [[ -n "$APK_LINK" ]] && DOWNLOADS+="[📱 Android APK](https://drive.google.com/drive/folders/1S4QzdKz7ZofhiF5GAvjMdBvYK7YhndKM)\n"
+          [[ -n "$WINDOWS_LINK" ]] && DOWNLOADS+="[🪟 Windows Installer]($WINDOWS_LINK)\n"
+          [[ -n "$LINUX_LINK" ]] && DOWNLOADS+="[🐧 Linux ZIP]($LINUX_LINK)\n"
+          [[ -n "$IOS_LINK" ]] && DOWNLOADS+="[🍎 iOS IPA]($IOS_LINK)\n"
+          [[ -n "$MACOS_LINK" ]] && DOWNLOADS+="[💻 macOS DMG]($MACOS_LINK)\n"
+
+          if [[ -n "$DOWNLOADS" ]]; then
+            curl -H "Content-Type: application/json" \
+                 -d "{\"content\": \"${DOWNLOADS}\"}" \
+                 "$WEBHOOK_URL"
+          fi
