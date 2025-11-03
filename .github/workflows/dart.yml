@@ -7,7 +7,7 @@ on:
       - 'v*-beta*'
 
 env:
-  FLUTTER_VERSION: '3.32.5'
+  FLUTTER_VERSION: '3.35.7'
   JAVA_VERSION: '17'
   CMAKE_VERSION: '3.18.1'
 
