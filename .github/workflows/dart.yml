@@ -87,7 +87,7 @@ jobs:
       - name: Extract version
         id: version
         run: |
-          VERSION=$(grep 'version:' pubspec.yaml | sed 's/version: //')
+          VERSION=$(grep '^version:' pubspec.yaml | sed 's/version:[[:space:]]*//' | cut -d'#' -f1 | xargs)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
   build_android:
