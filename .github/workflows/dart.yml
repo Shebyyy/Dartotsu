@@ -1,7 +1,7 @@
 name: Dartotsu Build Workflow
 on:
   push:
-    branches: [main]
+    branches: [main1]
     tags:
       - 'v*'
       - 'v*-beta*'
