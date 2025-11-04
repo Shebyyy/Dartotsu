@@ -1,4 +1,7 @@
 name: Handle Extension issuesAdd commentMore actions
+permissions:
+  contents: read
+  issues: write
 on:
   issues:
     types: [opened]
