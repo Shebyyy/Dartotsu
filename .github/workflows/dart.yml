@@ -417,8 +417,14 @@ jobs:
         with:
           name: last-sha
           path: last_sha.txt
+      - name: Debug webhook
+        run: |
+          echo "Webhook URL: ${{ needs.setup.outputs.discord_channel }}"
+          echo "Webhook URL length: ${#WEBHOOK_URL}"
+          echo "Ping role: ${{ needs.setup.outputs.ping_role }}"
+        env:
+          WEBHOOK_URL: ${{ needs.setup.outputs.discord_channel }}
       - name: Send Discord notification
-        if: needs.setup.outputs.discord_channel != ''
         env:
           WEBHOOK_URL: ${{ needs.setup.outputs.discord_channel }}
           PING_ROLE: ${{ needs.setup.outputs.ping_role }}
@@ -472,7 +478,6 @@ jobs:
             '{content:$p,embeds:[{title:$t,color:($col|tonumber),fields:[{name:"Commits:",value:$c,inline:true},{name:"Developers:",value:$d,inline:false}],footer:{text:$f},timestamp:$ts,thumbnail:{url:$th}}]}' \
           | curl -H "Content-Type: application/json" -d @- "$WEBHOOK_URL"
       - name: Send download links
-        if: needs.setup.outputs.discord_channel != ''
         env:
           WEBHOOK_URL: ${{ needs.setup.outputs.discord_channel }}
         run: |
