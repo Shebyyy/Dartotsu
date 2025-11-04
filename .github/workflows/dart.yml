@@ -3,7 +3,7 @@ permissions:
   contents: read
 on:
   push:
-    branches: [main1]
+    branches: [main]
     tags: ['v*', 'v*-beta*']
 
 env:
