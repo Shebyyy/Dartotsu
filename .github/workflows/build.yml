@@ -1,0 +1,348 @@
+name: Dartotsu Unified Build & Release
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+    inputs:
+      build_targets:
+        description: "Select platforms to build"
+        required: true
+        type: choice
+        options: ["all", "android", "windows", "linux", "ios", "macos"]
+      clean_build:
+        description: "Clean build?"
+        type: boolean
+        default: false
+      ping_discord:
+        description: "Ping Discord role?"
+        type: boolean
+        default: false
+      release_type:
+        description: "Release type"
+        type: choice
+        options: ["alpha", "beta", "stable"]
+        default: "alpha"
+
+env:
+  FLUTTER_VERSION: 3.35.7
+
+jobs:
+  # Build all selected platforms
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: android
+            os: ubuntu-latest
+          - platform: windows
+            os: windows-latest
+          - platform: linux
+            os: ubuntu-latest
+          - platform: ios
+            os: macos-latest
+          - platform: macos
+            os: macos-latest
+
+    # Run only if platform is selected via tag, commit message, or manual dispatch
+    if: >-
+      ${{ github.event_name == 'workflow_dispatch' && (
+          inputs.build_targets == 'all' || contains(inputs.build_targets, matrix.platform)
+      ) }} ||
+      ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && (
+          contains(github.event.head_commit.message, '[build.all]') ||
+          contains(github.event.head_commit.message, format('[build.{0}]', matrix.platform))
+      ) }} ||
+      ${{ startsWith(github.ref, 'refs/tags/v') }}
+
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      is_alpha: ${{ steps.config.outputs.is_alpha }}
+      is_beta: ${{ steps.config.outputs.is_beta }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Determine if this is alpha, beta, or stable
+      - name: Set release type
+        id: config
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            TYPE="${{ inputs.release_type }}"
+          elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            [[ "${{ github.ref_name }}" == *"beta"* ]] && TYPE="beta" || TYPE="stable"
+          else
+            TYPE="alpha"
+          fi
+          echo "release_type=$TYPE" >> $GITHUB_OUTPUT
+          echo "is_alpha=$([[ $TYPE == 'alpha' ]] && echo true || echo false)" >> $GITHUB_OUTPUT
+          echo "is_beta=$([[ $TYPE == 'beta' ]] && echo true || echo false)" >> $GITHUB_OUTPUT
+
+      # Setup Flutter
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      # Cache dependencies
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ${{ steps.flutter.outputs.pub-cache-path }}
+            .dart_tool/
+            build/
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            ~/cmake
+            ~/.cargo/**
+            target/
+          key: v2-${{ runner.os }}-${{ matrix.platform }}-${{ hashFiles('**/pubspec.lock','**/pubspec.yaml','**/*.gradle*','**/gradle-wrapper.properties','**/Cargo.lock') }}
+          restore-keys: v2-${{ runner.os }}-${{ matrix.platform }}-
+
+      # Android: Java + NDK
+      - name: Setup Java
+        if: matrix.platform == 'android'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup NDK
+        if: matrix.platform == 'android'
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r25c
+
+      # Linux: Install system packages
+      - name: Setup Linux deps
+        if: matrix.platform == 'linux'
+        uses: awalsh128/cache-apt-pkgs@v1
+        with:
+          packages: ninja-build cmake libgtk-3-dev webkit2gtk-4.1 libmpv-dev pkg-config fuse
+
+      # Windows: Enable MSVC + signtool
+      - name: Setup Windows dev env
+        if: matrix.platform == 'windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      # Load secrets and write config files
+      - name: Setup secrets
+        env:
+          FLUTTER_VERSION_SECRET: ${{ secrets.FLUTTER_VERSION }}
+          SIMKL_SECRET: ${{ secrets.SIMKL_SECRET }}
+          APK_SIGN: ${{ secrets.APK_SIGN }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          PFX_FILE: ${{ secrets.PFX_FILE }}
+          PFX_PASSWORD: ${{ secrets.PFX_PASSWORD }}
+        run: |
+          echo "FLUTTER_VERSION=${FLUTTER_VERSION_SECRET:-$FLUTTER_VERSION}" >> $GITHUB_ENV
+          echo "SIMKL_SECRET=$SIMKL_SECRET" > .env
+          echo "hash=$(git rev-parse --short HEAD)" >> .env
+
+          # Android keystore
+          mkdir -p android/app
+          echo "$APK_SIGN" | base64 --decode > android/app/dartotsu.jks
+          cat > android/key.properties <<EOF
+          storePassword=$KEYSTORE_PASSWORD
+          keyPassword=$KEYSTORE_PASSWORD
+          keyAlias=$KEY_ALIAS
+          storeFile=dartotsu.jks
+          EOF
+
+          # Windows PFX
+          mkdir -p $env:USERPROFILE\certs
+          [System.IO.File]::WriteAllBytes("$env:USERPROFILE\certs\Dartotsu.pfx", [Convert]::FromBase64String("$PFX_FILE"))
+
+      # Build platform-specific artifacts
+      - name: Build
+        shell: bash
+        run: |
+          flutter pub get
+          ${{ inputs.clean_build && 'flutter clean && ' || '' }}flutter pub get
+
+          case "${{ matrix.platform }}" in
+            android)
+              flutter build apk --release --split-per-abi
+              flutter build apk --release
+              cd build/app/outputs/flutter-apk
+              for f in app-*-release.apk; do
+                abi=$(echo $f | sed 's/app-\(.*\)-release.apk/\1/')
+                mv $f Dartotsu_Android_${abi}_${{github.ref_name}}.apk
+              done
+              mv app-release.apk Dartotsu_Android_Universal_${{github.ref_name}}.apk
+              ;;
+            windows)
+              version=$(grep 'version:' pubspec.yaml | sed 's/version: \([0-9.]*\).*/\1/')
+              echo "version=$version" >> $GITHUB_ENV
+              dart run inno_bundle:build --sign-tool-params "signtool sign /fd sha256 /f \"C:\Users\runneradmin\certs\Dartotsu.pfx\" /p \"${{secrets.PFX_PASSWORD}}\" /tr http://timestamp.digicert.com /td sha256 /v \$f" --release
+              ;;
+            linux)
+              flutter build linux --release
+              cd build/linux/x64/release/bundle
+              zip -r Dartotsu_Linux_${{github.ref_name}}.zip .
+              ;;
+            ios)
+              flutter build ios --release --no-codesign
+              cd build/ios/iphoneos
+              rm -rf Payload && mkdir -p Payload && cp -R Runner.app Payload/
+              zip -r Dartotsu-iOS-${{ github.ref_name }}.ipa Payload
+              ;;
+            macos)
+              flutter build macos --release
+              mkdir -p build/macos/Release
+              hdiutil create -volname "Dartotsu" -srcfolder build/macos/Build/Products/Release/Dartotsu.app -ov -format UDZO build/macos/Release/Dartotsu-macos-${{github.ref_name}}.dmg
+              ;;
+          esac
+
+      # Upload built files as artifacts
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.platform }}-artifacts
+          path: |
+            ${{ matrix.platform == 'android' && 'build/app/outputs/flutter-apk/Dartotsu_Android_*.apk' || '' }}
+            ${{ matrix.platform == 'windows' && 'build/windows/x64/installer/Release/Dartotsu-x86_64-*-Installer.exe' || '' }}
+            ${{ matrix.platform == 'linux' && 'build/linux/x64/release/bundle/Dartotsu_Linux_*.zip' || '' }}
+            ${{ matrix.platform == 'ios' && 'build/ios/iphoneos/Dartotsu-iOS-*.ipa' || '' }}
+            ${{ matrix.platform == 'macos' && 'build/macos/Release/Dartotsu-macos-*.dmg' || '' }}
+
+  # Alpha: Upload APK to Google Drive
+  drive-alpha:
+    needs: build
+    if: needs.build.outputs.is_alpha == 'true' && !contains(needs.*.result, 'failure')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - uses: adityaa1999/google-drive-upload-git-action@v3
+        with:
+          credentials: ${{ secrets.GOOGLE_SERVICE_ACCOUNT }}
+          folderId: ${{ secrets.GOOGLE_FOLDER_ANDROID }}
+          filename: "artifacts/android-artifacts/**/*.apk"
+          overwrite: true
+
+  # Beta/Stable: Create GitHub Release
+  release:
+    needs: build
+    if: needs.build.outputs.is_alpha == 'false' && !contains(needs.*.result, 'failure')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Generate changelog
+        uses: mikepenz/release-changelog-builder-action@v4
+        id: changelog
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          configurationJson: |
+            {
+              "categories": [
+                {"title": "### New Features", "labels": ["feat"]},
+                {"title": "### Bug Fixes & Improvements", "labels": ["fix"]},
+                {"title": "### Refactors", "labels": ["refactor"]},
+                {"title": "### Style Changes", "labels": ["style"]},
+                {"title": "### Performance Improvements", "labels": ["perf"]},
+                {"title": "### Chores & Documentation", "labels": ["chore"]}
+              ]
+            }
+      - uses: ncipollo/release-action@v1
+        with:
+          artifacts: "artifacts/**/*"
+          tag: ${{ github.ref_name }}
+          body: ${{ steps.changelog.outputs.changelog }}
+          prerelease: ${{ needs.build.outputs.is_beta == 'true' }}
+          allowUpdates: true
+
+  # Alpha: Notify Discord
+  notify-alpha:
+    needs: [build, drive-alpha]
+    if: needs.build.outputs.is_alpha == 'true' && !contains(needs.*.result, 'failure')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Get recent commits
+        id: commits
+        run: |
+          LAST=$(git rev-list --max-parents=0 HEAD || echo "")
+          COMMITS=$(git log $LAST..HEAD --pretty=format:"• %s (%an)" --max-count=8 | paste -sd '\n' -)
+          echo "commits<<EOF" >> $GITHUB_OUTPUT
+          echo "$COMMITS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+      - uses: tsickert/discord-webhook@v5
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          content: ${{ inputs.ping_discord && secrets.DISCORD_ALPHA_ROLE_PING || '' }}
+          embed-title: "New Alpha Build Dropped"
+          embed-description: |
+            **Commits**
+            ${{ steps.commits.outputs.commits }}
+            **Download**
+            [Google Drive Folder](https://drive.google.com/drive/folders/${{ secrets.GOOGLE_FOLDER_ANDROID }})
+          embed-color: 1820869
+          embed-footer: "Alpha Build • ${{ github.sha }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: last-sha
+          path: .git/HEAD
+
+  # Beta/Stable: Notify Discord
+  notify-release:
+    needs: [build, release]
+    if: needs.build.outputs.is_alpha == 'false' && !contains(needs.*.result, 'failure')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get release URL
+        id: rel
+        run: |
+          URL="${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ github.ref_name }}"
+          echo "url=$URL" >> $GITHUB_OUTPUT
+      - uses: tsickert/discord-webhook@v5
+        with:
+          webhook-url: ${{ needs.build.outputs.is_beta == 'true' && secrets.DISCORD_WEBHOOK_BETA_URL || secrets.DISCORD_WEBHOOK_RELEASE_URL }}
+          content: ${{ needs.build.outputs.is_beta == 'true' && secrets.DISCORD_BETA_ROLE_PING || secrets.DISCORD_STABLE_ROLE_PING }}
+          embed-title: "New ${{ needs.build.outputs.is_beta == 'true' && 'Beta' || 'Stable' }} Release"
+          embed-description: |
+            [View Release](${{ steps.rel.outputs.url }})
+          embed-color: 1820869
+
+  # Trigger external downloader (alpha only)
+  trigger-downloader:
+    needs: [build, notify-alpha]
+    if: needs.build.outputs.is_alpha == 'true' && !contains(needs.*.result, 'failure')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger downloader
+        run: |
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.DOWNLOADER_TRIGGER_TOKEN_SHEBY }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/grayankit/Dartotsu-Downloader/actions/workflows/main.yml/dispatches \
+            -d '{
+              "ref":"main",
+              "inputs":{
+                "commit_sha":"${{ github.sha }}",
+                "build_android":"success",
+                "build_windows":"success",
+                "build_linux":"success",
+                "build_ios":"success",
+                "build_macos":"success"
+              }
+            }'
