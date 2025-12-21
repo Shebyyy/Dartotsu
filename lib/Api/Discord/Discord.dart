@@ -25,14 +25,28 @@ class _DiscordController extends GetxController {
   var token = "".obs;
   var userName = "".obs;
   var avatar = "".obs;
+  var _isInitialized = false;
 
   @override
   void onInit() {
     super.onInit();
-    // Set idle RPC when app starts (if logged in)
-    if (getSavedToken()) {
-      setIdleRpc();
-    }
+    // Load the token but don't set idle RPC immediately
+    getSavedToken();
+    
+    // Use a post-frame callback to ensure the UI is rendered before initializing Discord
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeDiscordWithDelay();
+    });
+  }
+  
+  void _initializeDiscordWithDelay() {
+    // Delay the Discord initialization to avoid blocking the UI
+    Future.delayed(const Duration(seconds: 2), () {
+      if (token.isNotEmpty && !_isInitialized) {
+        _isInitialized = true;
+        setIdleRpc();
+      }
+    });
   }
 
   bool getSavedToken() {
@@ -45,14 +59,17 @@ class _DiscordController extends GetxController {
   Future<void> saveToken(String newToken) async {
     saveData(PrefName.discordToken, newToken);
     token.value = newToken;
-    // Set idle RPC after login
-    setIdleRpc();
+    // Set idle RPC after login with a delay
+    Future.delayed(const Duration(milliseconds: 500), () {
+      setIdleRpc();
+    });
   }
 
   Future<void> removeSavedToken() async {
     token.value = '';
     userName.value = '';
     avatar.value = '';
+    _isInitialized = false;
     saveData(PrefName.discordToken, '');
     saveData(PrefName.discordUserName, '');
     saveData(PrefName.discordAvatar, '');
@@ -91,12 +108,13 @@ class _DiscordController extends GetxController {
     showCustomBottomDialog(context, dialog);
   }
 
-  // NEW: Set idle RPC when not watching/reading
+  // Set idle RPC when not watching/reading
   Future<void> setIdleRpc() async {
     if (token.isEmpty) return;
 
-    var smallIcon = await smallImage.getDiscordUrl();
     try {
+      var smallIcon = await smallImage.getDiscordUrl();
+      
       final Map<String, dynamic> rpc = {
         'op': 3,
         'd': {
@@ -215,7 +233,7 @@ class _DiscordController extends GetxController {
     }
   }
 
-  // NEW: Call this when user stops watching/reading
+  // Call this when user stops watching/reading
   Future<void> clearWatchingRpc() async {
     await setIdleRpc();
   }
