@@ -75,7 +75,7 @@ class HomeScreenMobileState extends State<HomeScreenMobile> {
                   if (!context.useGlassMode) _buildBackgroundImage,
                   _buildAvatar,
                   _buildUserInfo,
-                  _buildLiveUserCount, // Added live count
+                  _buildLiveUserCount, // Added live count (dual display)
                   _buildCards,
                 ],
               );
@@ -205,12 +205,12 @@ class HomeScreenMobileState extends State<HomeScreenMobile> {
     );
   }
 
-  // NEW: Live User Count Widget
+  // UPDATED: Live User Count Widget - Shows both online and watching
   Widget get _buildLiveUserCount {
     return Positioned(
       top: 100.statusBar(),
       left: 34.0,
-      child: LiveUserCountWidget(compact: true)
+      child: const DualLiveCountWidget()
           .animate(effects: [
         const SlideEffect(
           begin: Offset(-1, 0),
