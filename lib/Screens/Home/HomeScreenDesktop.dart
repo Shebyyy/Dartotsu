@@ -75,7 +75,7 @@ class HomeScreenDesktopState extends State<HomeScreenDesktop> {
                 children: [
                   if (!themeNotifier.useGlassMode) _buildBackgroundImage,
                   _buildUserInfo,
-                  _buildLiveUserCount, // Added live count
+                  _buildLiveUserCount, // Added live count (dual display)
                   _buildCards,
                 ],
               );
@@ -164,12 +164,12 @@ class HomeScreenDesktopState extends State<HomeScreenDesktop> {
     );
   }
 
-  // NEW: Live User Count Widget
+  // UPDATED: Live User Count Widget - Shows both online and watching
   Widget get _buildLiveUserCount {
     return Positioned(
       top: 36.statusBar(),
       right: 34.0,
-      child: LiveUserCountWidget(compact: true)
+      child: const DualLiveCountWidget()
           .animate(effects: [
         const SlideEffect(
           begin: Offset(1, 0),
