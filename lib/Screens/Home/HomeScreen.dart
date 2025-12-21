@@ -23,6 +23,11 @@ import '../MediaList/MediaListScreen.dart';
 import '../Settings/SettingsBottomSheet.dart';
 import 'Widgets/AvtarWidget.dart';
 import 'Widgets/NotificationBadge.dart';
+
+// ADD THESE TWO IMPORTS FOR LIVE USER COUNT
+import '../../Services/LiveUserCountService.dart';
+import '../../Widgets/LiveUserCountWidget.dart';
+
 part 'HomeScreenDesktop.dart';
 part 'HomeScreenMobile.dart';
 
@@ -38,9 +43,11 @@ class HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final service = context.currentService();
     final screen = service.homeScreen;
+    
     if (screen == null) {
       return service.notImplemented(widget.runtimeType.toString());
     }
+    
     final isPhone = context.isPhone;
     return isPhone ? const HomeScreenMobile() : const HomeScreenDesktop();
   }
