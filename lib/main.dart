@@ -41,6 +41,9 @@ import 'Screens/HomeNavbarMobile.dart';
 import 'Screens/Onboarding/OnboardingScreen.dart';
 import 'Services/MediaService.dart';
 import 'Services/ServiceSwitcher.dart';
+// ADD THESE TWO IMPORTS
+import 'Services/HeartbeatService.dart';
+import 'Services/LiveUserCountService.dart';
 import 'Theme/ThemeManager.dart';
 import 'Theme/ThemeProvider.dart';
 import 'Widgets/CachedNetworkImage.dart';
@@ -77,6 +80,11 @@ void main(List<String> args) async {
         return;
       }
       await init();
+      
+      // INITIALIZE TRACKING SERVICES (ADD THIS)
+      Get.put(HeartbeatService());
+      Get.put(LiveUserCountService());
+      
       runApp(
         MultiProvider(
           providers: [
@@ -312,7 +320,7 @@ class MainScreen extends StatefulWidget {
 
 late FloatingBottomNavBar navbar;
 
-class MainScreenState extends State<MainScreen> {
+class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   final _selectedIndex = 1.obs;
 
   void _onTabSelected(int index) => _selectedIndex.value = index;
@@ -321,6 +329,25 @@ class MainScreenState extends State<MainScreen> {
   void initState() {
     super.initState();
     checkForUpdate();
+    // ADD LIFECYCLE OBSERVER FOR HEARTBEAT
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    // REMOVE LIFECYCLE OBSERVER
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  // ADD LIFECYCLE HANDLER FOR APP PAUSE/RESUME
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      Heartbeat.resume();  // Resume heartbeat when app comes to foreground
+    } else if (state == AppLifecycleState.paused) {
+      Heartbeat.pause();   // Pause heartbeat when app goes to background
+    }
   }
 
   Widget get _navbar {
