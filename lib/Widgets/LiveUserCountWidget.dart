@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'LiveUserCountService.dart';
+import '../Services/LiveUserCountService.dart';
 
 class LiveUserCountWidget extends StatelessWidget {
   final bool compact;
