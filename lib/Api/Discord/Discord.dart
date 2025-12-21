@@ -26,6 +26,15 @@ class _DiscordController extends GetxController {
   var userName = "".obs;
   var avatar = "".obs;
 
+  @override
+  void onInit() {
+    super.onInit();
+    // Set idle RPC when app starts (if logged in)
+    if (getSavedToken()) {
+      setIdleRpc();
+    }
+  }
+
   bool getSavedToken() {
     token.value = loadData(PrefName.discordToken);
     userName.value = loadData(PrefName.discordUserName);
@@ -36,6 +45,8 @@ class _DiscordController extends GetxController {
   Future<void> saveToken(String newToken) async {
     saveData(PrefName.discordToken, newToken);
     token.value = newToken;
+    // Set idle RPC after login
+    setIdleRpc();
   }
 
   Future<void> removeSavedToken() async {
@@ -45,6 +56,10 @@ class _DiscordController extends GetxController {
     saveData(PrefName.discordToken, '');
     saveData(PrefName.discordUserName, '');
     saveData(PrefName.discordAvatar, '');
+    // Stop RPC on logout
+    if (DiscordService.isInitialized) {
+      DiscordService.stopRPC();
+    }
   }
 
   void warning(BuildContext context) {
@@ -74,6 +89,54 @@ class _DiscordController extends GetxController {
       },
     );
     showCustomBottomDialog(context, dialog);
+  }
+
+  // NEW: Set idle RPC when not watching/reading
+  Future<void> setIdleRpc() async {
+    if (token.isEmpty) return;
+
+    var smallIcon = await smallImage.getDiscordUrl();
+    try {
+      final Map<String, dynamic> rpc = {
+        'op': 3,
+        'd': {
+          'activities': [
+            {
+              'application_id': applicationId,
+              'name': 'Dartotsu',
+              'details': 'Browsing',
+              'state': 'Looking for something to watch',
+              'type': 3,
+              'assets': {
+                'large_image': smallIcon,
+                'large_text': 'Dartotsu',
+                'small_image': smallIcon,
+                'small_text': 'Dartotsu',
+              },
+              'buttons': [
+                'Download Dartotsu',
+              ],
+              'metadata': {
+                'button_urls': [
+                  'https://github.com/aayush2622/Dartotsu',
+                ],
+              },
+            },
+          ],
+          'afk': false,
+          'since': null,
+          'status': 'online',
+        },
+      };
+      
+      if (DiscordService.isInitialized) {
+        DiscordService.stopRPC();
+      }
+      DiscordService.setPresence(jsonEncode(rpc));
+      debugPrint('Set idle Discord RPC');
+    } catch (e) {
+      debugPrint('Error setting idle RPC: $e');
+    }
   }
 
   Future<void> setRpc(
@@ -150,5 +213,10 @@ class _DiscordController extends GetxController {
     } catch (e) {
       debugPrint('Error setting RPC: $e');
     }
+  }
+
+  // NEW: Call this when user stops watching/reading
+  Future<void> clearWatchingRpc() async {
+    await setIdleRpc();
   }
 }
