@@ -1,6 +1,3 @@
-import 'package:dartotsu/Services/LiveUserCountService.dart';
-import 'package:dartotsu/Widgets/LiveUserCountWidget.dart';
-
 part of 'HomeScreen.dart';
 
 class HomeScreenMobile extends StatefulWidget {
@@ -78,7 +75,7 @@ class HomeScreenMobileState extends State<HomeScreenMobile> {
                   if (!context.useGlassMode) _buildBackgroundImage,
                   _buildAvatar,
                   _buildUserInfo,
-                  _buildLiveUserCount, // Add this line
+                  _buildLiveUserCount, // Added live count
                   _buildCards,
                 ],
               );
@@ -86,26 +83,6 @@ class HomeScreenMobileState extends State<HomeScreenMobile> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget get _buildLiveUserCount {
-    return Positioned(
-      top: 100.statusBar(), // Adjust position as needed
-      left: 16.0,
-      child: LiveUserCountWidget(compact: true)
-          .animate(effects: [
-        const SlideEffect(
-          begin: Offset(0, 1),
-          end: Offset.zero,
-          duration: Duration(milliseconds: 200),
-        ),
-        const FadeEffect(
-          begin: 0,
-          end: 1,
-          duration: Duration(milliseconds: 200),
-        )
-      ]),
     );
   }
 
@@ -223,6 +200,27 @@ class HomeScreenMobileState extends State<HomeScreenMobile> {
           begin: Offset(0, 1),
           end: Offset.zero,
           duration: Duration(milliseconds: 200),
+        )
+      ]),
+    );
+  }
+
+  // NEW: Live User Count Widget
+  Widget get _buildLiveUserCount {
+    return Positioned(
+      top: 100.statusBar(),
+      left: 34.0,
+      child: LiveUserCountWidget(compact: true)
+          .animate(effects: [
+        const SlideEffect(
+          begin: Offset(-1, 0),
+          end: Offset.zero,
+          duration: Duration(milliseconds: 300),
+        ),
+        const FadeEffect(
+          begin: 0,
+          end: 1,
+          duration: Duration(milliseconds: 300),
         )
       ]),
     );
