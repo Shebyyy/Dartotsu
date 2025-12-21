@@ -252,8 +252,8 @@ class DualLiveCountWidget extends StatelessWidget {
       final total = LiveUserCount.totalUsers.value;
       final watching = LiveUserCount.watchingUsers.value;
       
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      // *** CHANGE: Changed Column to Row for side-by-side layout ***
+      return Row(
         children: [
           // Online count
           _buildCompactStat(
@@ -262,7 +262,8 @@ class DualLiveCountWidget extends StatelessWidget {
             isLoading ? '...' : LiveUserCount.getFormattedTotal(),
             'online',
           ),
-          const SizedBox(height: 4),
+          // *** CHANGE: Added horizontal spacing ***
+          const SizedBox(width: 8),
           // Watching count
           _buildCompactStat(
             theme,
