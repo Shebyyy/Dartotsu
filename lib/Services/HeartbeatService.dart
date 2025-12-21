@@ -6,7 +6,7 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'dart:io';
 
 class HeartbeatService extends GetxController {
-  static const String API_BASE_URL = 'YOUR_BOT_API_URL'; // e.g., 'https://your-bot-server.com'
+  static const String API_BASE_URL = 'https://dartotsu-bot.onrender.com'; // e.g., 'https://your-bot-server.com'
   static const Duration HEARTBEAT_INTERVAL = Duration(seconds: 30);
   
   Timer? _heartbeatTimer;
