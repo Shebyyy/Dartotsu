@@ -75,6 +75,7 @@ class HomeScreenDesktopState extends State<HomeScreenDesktop> {
                 children: [
                   if (!themeNotifier.useGlassMode) _buildBackgroundImage,
                   _buildUserInfo,
+                  _buildLiveUserCount, // Added live count
                   _buildCards,
                 ],
               );
@@ -158,6 +159,27 @@ class HomeScreenDesktopState extends State<HomeScreenDesktop> {
           begin: Offset(0, 1),
           end: Offset.zero,
           duration: Duration(milliseconds: 200),
+        )
+      ]),
+    );
+  }
+
+  // NEW: Live User Count Widget
+  Widget get _buildLiveUserCount {
+    return Positioned(
+      top: 36.statusBar(),
+      right: 34.0,
+      child: LiveUserCountWidget(compact: true)
+          .animate(effects: [
+        const SlideEffect(
+          begin: Offset(1, 0),
+          end: Offset.zero,
+          duration: Duration(milliseconds: 300),
+        ),
+        const FadeEffect(
+          begin: 0,
+          end: 1,
+          duration: Duration(milliseconds: 300),
         )
       ]),
     );
