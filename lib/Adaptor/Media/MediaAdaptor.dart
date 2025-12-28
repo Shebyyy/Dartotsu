@@ -10,6 +10,7 @@ import '../../DataClass/Media.dart';
 import '../../Functions/Function.dart';
 import '../../Screens/Detail/MediaScreen.dart';
 import '../../Widgets/ScrollConfig.dart';
+import '../../Widgets/MediaQuickInfoPopup.dart';
 import 'MediaExpandedViewHolder.dart';
 import 'MediaLargeViewHolder.dart';
 import 'MediaPageSmallViewHolder.dart';
@@ -144,7 +145,15 @@ class MediaGridState extends State<MediaAdaptor> {
 
   void _handleLongPress(Media media) {
     if (widget.mediaList == null) return;
-    context.currentService(listen: false).compactListEditor(context, media);
+    
+    // Check if media is already in user's list
+    if (media.userListId == null) {
+      // Show quick info popup for items not in the list
+      showMediaQuickInfoPopup(context, media);
+    } else {
+      // Keep existing behavior for items already in the list
+      context.currentService(listen: false).compactListEditor(context, media);
+    }
   }
 
   EdgeInsetsDirectional _horizontalPadding(int index, int length) {
