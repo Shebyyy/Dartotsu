@@ -1,10 +1,12 @@
 import 'package:dartotsu/Adaptor/Media/Widgets/Chips.dart';
 import 'package:dartotsu/DataClass/Media.dart';
 import 'package:dartotsu/DataClass/SearchResults.dart';
+import 'package:dartotsu/Functions/Extensions.dart';
 import 'package:dartotsu/Functions/Function.dart';
 import 'package:dartotsu/Preferences/IsarDataClasses/MediaSettings/MediaSettings.dart';
 import 'package:dartotsu/Screens/Detail/MediaScreen.dart';
 import 'package:dartotsu/Screens/Detail/Tabs/Info/Widgets/GenreWidget.dart';
+import 'package:dartotsu/Screens/Search/SearchScreen.dart';
 import 'package:dartotsu/Theme/LanguageSwitcher.dart';
 import 'package:dartotsu/Theme/ThemeManager.dart';
 import 'package:expandable_text/expandable_text.dart';
