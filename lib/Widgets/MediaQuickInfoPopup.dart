@@ -1023,8 +1023,6 @@ class _MediaQuickInfoPopupState extends State<MediaQuickInfoPopup> {
       userProgress: media.userProgress,
       userStatus: media.userStatus,
       userScore: media.userScore,
-      userStartDate: media.userStartDate,
-      userEndDate: media.userEndDate,
       settings: MediaSettings(
         navBarIndex: tabIndex,
         lastUsedSource: media.settings.lastUsedSource,
