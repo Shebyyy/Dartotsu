@@ -380,17 +380,80 @@ check_dependencies() {
 
     # Check libraries using pkg-config
     if command -v pkg-config >/dev/null 2>&1; then
-        # Check for WebKit2GTK with fallback to older version
-        if ! pkg-config --exists webkit2gtk-4.1 2>/dev/null; then
-            if ! pkg-config --exists libwebkit2gtk-4.1-0 2>/dev/null; then
-                missing_deps+=("webkit2gtk")
+        # Check for GTK3 (required for GDK/display access)
+        pkg-config --exists gtk+-3.0 2>/dev/null || missing_deps+=("gtk3")
+
+        # Check for WPE WebKit (new backend - replaces WebKit2GTK)
+        # The app now uses WPE WebKit for offscreen web rendering
+        # Try wpe-webkit-2.0 first (newer), then 1.1, then 1.0
+        local has_wpe=false
+        if pkg-config --exists wpe-webkit-2.0 2>/dev/null; then
+            has_wpe=true
+        elif pkg-config --exists wpe-webkit-1.1 2>/dev/null; then
+            has_wpe=true
+        elif pkg-config --exists wpe-webkit-1.0 2>/dev/null; then
+            has_wpe=true
+        fi
+
+        if [ "$has_wpe" = false ]; then
+            # Fallback: check if WebKit2GTK is available (for older pre-built releases)
+            if pkg-config --exists webkit2gtk-4.1 2>/dev/null; then
+                info_msg "WPE WebKit not found, but WebKit2GTK 4.1 is available (legacy support)"
+            elif pkg-config --exists libwebkit2gtk-4.1-0 2>/dev/null; then
+                info_msg "WPE WebKit not found, but WebKit2GTK 4.1 is available (legacy support)"
+            else
+                missing_deps+=("wpewebkit")
             fi
         fi
 
-        # Additional library checks for GUI applications
-        pkg-config --exists gtk+-3.0 2>/dev/null || missing_deps+=("gtk3")
+        # Check for libwpe (WPE foundation library)
+        if [ "$has_wpe" = true ]; then
+            pkg-config --exists wpe-1.0 2>/dev/null || missing_deps+=("libwpe")
+
+            # Check for WPE Platform (preferred) or WPEBackend-FDO (legacy fallback)
+            local has_wpe_backend=false
+            if pkg-config --exists wpe-platform-2.0 2>/dev/null; then
+                has_wpe_backend=true
+            elif pkg-config --exists wpebackend-fdo-1.0 2>/dev/null; then
+                has_wpe_backend=true
+                info_msg "Using WPEBackend-FDO (legacy) - wpe-platform-2.0 is recommended"
+            fi
+
+            if [ "$has_wpe_backend" = false ]; then
+                missing_deps+=("wpebackend")
+            fi
+        fi
+
+        # Check for libepoxy (OpenGL support - required by WPE backend)
+        if [ "$has_wpe" = true ]; then
+            pkg-config --exists epoxy 2>/dev/null || missing_deps+=("libepoxy")
+        fi
+
+        # Check for wayland-server (required by WPE backend for SHM buffer handling)
+        if [ "$has_wpe" = true ]; then
+            pkg-config --exists wayland-server 2>/dev/null || missing_deps+=("wayland-server")
+        fi
+
+        # Check for libmpv (required for video playback via media_kit)
+        pkg-config --exists mpv 2>/dev/null || missing_deps+=("libmpv")
+
+        # Check for libsecret (credential/key storage - now required by inappwebview)
+        pkg-config --exists libsecret-1 2>/dev/null || missing_deps+=("libsecret")
+
+        # Check for libass (subtitle rendering)
+        pkg-config --exists libass 2>/dev/null || optional_deps+=("libass")
     else
-        missing_deps+=("pkg-config" "webkit2gtk" "gtk3")
+        missing_deps+=("pkg-config" "gtk3" "wpewebkit" "libmpv" "libsecret")
+    fi
+
+    # Check for xdg-open (URL launching via url_launcher)
+    if ! command -v xdg-open >/dev/null 2>&1; then
+        optional_deps+=("xdg-utils")
+    fi
+
+    # Check for fuse (AppImage support)
+    if [ ! -e /dev/fuse ] && ! command -v fusermount >/dev/null 2>&1; then
+        optional_deps+=("fuse")
     fi
 
     # Report missing dependencies
@@ -442,6 +505,17 @@ install_packages() {
         deps=("${deps[@]/webkit2gtk/libwebkit2gtk-4.1-0}")
         deps=("${deps[@]/gtk3/libgtk-3-dev}")
         deps=("${deps[@]/pkg-config/pkg-config}")
+        deps=("${deps[@]/libmpv/libmpv-dev}")
+        deps=("${deps[@]/libsecret/libsecret-1-dev}")
+        deps=("${deps[@]/libass/libass-dev}")
+        deps=("${deps[@]/xdg-utils/xdg-utils}")
+        deps=("${deps[@]/fuse/fuse3}")
+        # WPE WebKit packages (new - replaces WebKit2GTK for webview)
+        deps=("${deps[@]/wpewebkit/libwpewebkit-2.0-dev}")
+        deps=("${deps[@]/libwpe/libwpe-1.0-dev}")
+        deps=("${deps[@]/wpebackend/wpebackend-fdo-1.0-dev}")
+        deps=("${deps[@]/libepoxy/libepoxy-dev}")
+        deps=("${deps[@]/wayland-server/libwayland-dev}")
 
     elif command -v dnf >/dev/null 2>&1; then
         distro="fedora"
@@ -451,6 +525,17 @@ install_packages() {
         deps=("${deps[@]/webkit2gtk/webkit2gtk4.1-0}")
         deps=("${deps[@]/gtk3/gtk3-devel}")
         deps=("${deps[@]/pkg-config/pkgconf-devel}")
+        deps=("${deps[@]/libmpv/mpv-libs-devel}")
+        deps=("${deps[@]/libsecret/libsecret-devel}")
+        deps=("${deps[@]/libass/libass-devel}")
+        deps=("${deps[@]/xdg-utils/xdg-utils}")
+        deps=("${deps[@]/fuse/fuse3}")
+        # WPE WebKit packages
+        deps=("${deps[@]/wpewebkit/wpewebkit-devel}")
+        deps=("${deps[@]/libwpe/libwpe-devel}")
+        deps=("${deps[@]/wpebackend/wpebackend-fdo-devel}")
+        deps=("${deps[@]/libepoxy/libepoxy-devel}")
+        deps=("${deps[@]/wayland-server/wayland-devel}")
 
     elif command -v pacman >/dev/null 2>&1; then
         distro="arch"
@@ -461,6 +546,17 @@ install_packages() {
         deps=("${deps[@]/webkit2gtk/webkit2gtk-4.1}")
         deps=("${deps[@]/gtk3/gtk3}")
         deps=("${deps[@]/pkg-config/pkgconf}")
+        deps=("${deps[@]/libmpv/mpv}")
+        deps=("${deps[@]/libsecret/libsecret}")
+        deps=("${deps[@]/libass/libass}")
+        deps=("${deps[@]/xdg-utils/xdg-utils}")
+        deps=("${deps[@]/fuse/fuse3}")
+        # WPE WebKit packages
+        deps=("${deps[@]/wpewebkit/wpewebkit}")
+        deps=("${deps[@]/libwpe/libwpe}")
+        deps=("${deps[@]/wpebackend/wpebackend-fdo}")
+        deps=("${deps[@]/libepoxy/libepoxy}")
+        deps=("${deps[@]/wayland-server/wayland}")
 
     elif command -v zypper >/dev/null 2>&1; then
         distro="opensuse"
@@ -470,6 +566,17 @@ install_packages() {
         deps=("${deps[@]/webkit2gtk/webkit2gtk3-devel}")
         deps=("${deps[@]/gtk3/gtk3-devel}")
         deps=("${deps[@]/pkg-config/pkg-config}")
+        deps=("${deps[@]/libmpv/libmpv-devel}")
+        deps=("${deps[@]/libsecret/libsecret-devel}")
+        deps=("${deps[@]/libass/libass-devel}")
+        deps=("${deps[@]/xdg-utils/xdg-utils}")
+        deps=("${deps[@]/fuse/fuse3}")
+        # WPE WebKit packages
+        deps=("${deps[@]/wpewebkit/wpewebkit-devel}")
+        deps=("${deps[@]/libwpe/libwpe-devel}")
+        deps=("${deps[@]/wpebackend/wpebackend-fdo-devel}")
+        deps=("${deps[@]/libepoxy/libepoxy-devel}")
+        deps=("${deps[@]/wayland-server/wayland-devel}")
 
     elif command -v brew >/dev/null 2>&1; then
         distro="macos"
@@ -479,6 +586,17 @@ install_packages() {
         deps=("${deps[@]/webkit2gtk/}")  # Remove webkit2gtk for macOS
         deps=("${deps[@]/gtk3/gtk+3}")
         deps=("${deps[@]/pkg-config/pkg-config}")
+        deps=("${deps[@]/libmpv/mpv}")
+        deps=("${deps[@]/libsecret/}")
+        deps=("${deps[@]/libass/libass}")
+        deps=("${deps[@]/xdg-utils/}")
+        deps=("${deps[@]/fuse/}")
+        # WPE WebKit packages (not needed on macOS)
+        deps=("${deps[@]/wpewebkit/}")
+        deps=("${deps[@]/libwpe/}")
+        deps=("${deps[@]/wpebackend/}")
+        deps=("${deps[@]/libepoxy/}")
+        deps=("${deps[@]/wayland-server/}")
 
     else
         error_exit "No supported package manager found! Please install manually: ${deps[*]}"
@@ -555,12 +673,140 @@ verify_installation() {
 
     # Verify library installations
     if command -v pkg-config >/dev/null 2>&1; then
-        if ! pkg-config --exists webkit2gtk-4.1 2>/dev/null && ! pkg-config --exists webkit2gtk-3.0 2>/dev/null; then
-            warn_msg "WebKit2GTK may not be properly installed - some features may not work"
+        # Check for WPE WebKit or WebKit2GTK (at least one must be present)
+        local has_webview=false
+        if pkg-config --exists wpe-webkit-2.0 2>/dev/null || \
+           pkg-config --exists wpe-webkit-1.1 2>/dev/null || \
+           pkg-config --exists wpe-webkit-1.0 2>/dev/null; then
+            has_webview=true
+            info_msg "WPE WebKit detected - new webview backend"
+        elif pkg-config --exists webkit2gtk-4.1 2>/dev/null || \
+             pkg-config --exists webkit2gtk-3.0 2>/dev/null; then
+            has_webview=true
+            warn_msg "Only WebKit2GTK found - consider installing WPE WebKit for better performance"
+        fi
+
+        if [ "$has_webview" = false ]; then
+            warn_msg "No webview library found - the app may not display web content"
+        fi
+
+        if ! pkg-config --exists mpv 2>/dev/null; then
+            warn_msg "libmpv not found - video playback will not work"
+        fi
+        if ! pkg-config --exists gtk+-3.0 2>/dev/null; then
+            warn_msg "GTK3 not found - the app may fail to launch"
+        fi
+        if ! pkg-config --exists libsecret-1 2>/dev/null; then
+            warn_msg "libsecret not found - credential storage may not work"
         fi
     fi
 
+    # Verify mpv runtime is available
+    if ! command -v mpv >/dev/null 2>&1; then
+        warn_msg "mpv not found - media playback features may be limited"
+    fi
+
     info_msg "Installation verification completed!"
+}
+
+# =============================================================================
+# 🔍 FIND LINUX ZIP IN RELEASES (with fallback to previous releases)
+# =============================================================================
+
+# Search for a Linux zip asset across releases, starting from the latest
+# and falling back to previous releases if the latest doesn't have one.
+# Usage: find_linux_zip_asset <owner> <repo> [max_pages]
+# Returns: the browser_download_url of the linux zip asset (or empty)
+find_linux_zip_asset() {
+    local _owner="$1"
+    local _repo="$2"
+    local _max_pages="${3:-5}"
+
+    info_msg "Searching for Linux build in ${BOLD}${_owner}/${_repo}${RESET} releases..."
+
+    for _page in $(seq 1 "$_max_pages"); do
+        local _api_url="https://api.github.com/repos/${_owner}/${_repo}/releases?per_page=10&page=${_page}"
+        local _response
+        _response=$(curl -s "$_api_url")
+
+        # Stop if no more releases (empty array or API error)
+        if [ -z "$_response" ] || echo "$_response" | grep -q '"message"'; then
+            break
+        fi
+
+        # Check how many releases are on this page
+        local _release_count
+        _release_count=$(echo "$_response" | grep -c '"tag_name"' || true)
+
+        if [ "$_release_count" -eq 0 ]; then
+            break
+        fi
+
+        # Get all tag names in order
+        local _tags
+        _tags=$(echo "$_response" | grep '"tag_name"' | cut -d '"' -f 4)
+
+        # Get all browser_download_urls for linux zips
+        # Matches: Dartotsu_linux.zip, Dartotsu_LinuxZip_*.zip, Dartotsu_Linux_*.zip, etc.
+        local _linux_urls
+        _linux_urls=$(echo "$_response" | grep '"browser_download_url"' | cut -d '"' -f 4 | grep -i 'linux.*\.zip\|linuxzip\|_linux_\?\.zip')
+
+        if [ -n "$_linux_urls" ]; then
+            # Found at least one linux zip on this page - take the first one (newest release)
+            local _found_url
+            _found_url=$(echo "$_linux_urls" | head -n 1)
+            local _found_tag
+            _found_tag=$(echo "$_tags" | head -n 1)
+            info_msg "Found Linux build in release ${BOLD}${_found_tag}${RESET}!"
+            echo "$_found_url"
+            return 0
+        fi
+
+        # No linux zip on this page - inform and continue to next page
+        warn_msg "No Linux build found on page ${_page}, checking previous releases..."
+    done
+
+    # Nothing found after all pages
+    echo ""
+    return 1
+}
+
+# Smarter asset finder: looks specifically for Linux zip, falls back through releases
+# Works for both alpha repo and main repo
+find_asset_with_fallback() {
+    local _owner="$1"
+    local _repo="$2"
+    local _mode="$3"  # "latest", "prerelease", or "alpha"
+    local _asset_url=""
+
+    case "$_mode" in
+        alpha)
+            # For alpha: fetch all releases and search for linux.zip from newest to oldest
+            _asset_url=$(find_linux_zip_asset "$_owner" "$_repo" 5)
+            ;;
+        latest|prerelease|"")
+            # For stable/pre-release: first try the latest, then fall back if no linux zip
+            local _api_url="https://api.github.com/repos/${_owner}/${_repo}/releases/latest"
+            if [ "$_mode" = "prerelease" ]; then
+                # For prerelease, get all releases and pick the first one (which is newest)
+                _api_url="https://api.github.com/repos/${_owner}/${_repo}/releases?per_page=1"
+            fi
+
+            local _response
+            _response=$(curl -s "$_api_url")
+
+            # Try to find linux zip in the latest release first
+            _asset_url=$(echo "$_response" | grep '"browser_download_url"' | cut -d '"' -f 4 | grep -i 'linux.*\.zip\|linuxzip\|_linux_\?\.zip' | head -n 1)
+
+            # If no linux zip in latest, fall back through previous releases
+            if [ -z "$_asset_url" ]; then
+                warn_msg "Latest release has no Linux build, checking previous releases..."
+                _asset_url=$(find_linux_zip_asset "$_owner" "$_repo" 5)
+            fi
+            ;;
+    esac
+
+    echo "$_asset_url"
 }
 
 # =============================================================================
@@ -611,35 +857,34 @@ install_app() {
     read -rn 1 ANSWER
     echo
 
-# Replace the case statement with:
 case "${ANSWER,,}" in
     p)
-        API_URL="https://api.github.com/repos/$OWNER/$REPO/releases"
+        SELECTED_MODE="prerelease"
         info_msg "Fetching pre-release versions..."
         ;;
     a)
         OWNER="grayankit"
         REPO="Dartotsu-Downloader"
-        API_URL="https://api.github.com/repos/$OWNER/$REPO/releases/latest"
+        SELECTED_MODE="alpha"
         info_msg "Fetching alpha build..."
         echo
         compare_commits
         ;;
     s|"")
-        API_URL="https://api.github.com/repos/$OWNER/$REPO/releases/latest"
+        SELECTED_MODE="latest"
         info_msg "Fetching stable release..."
         ;;
     *)
         warn_msg "Invalid selection, defaulting to stable release..."
-        API_URL="https://api.github.com/repos/$OWNER/$REPO/releases/latest"
+        SELECTED_MODE="latest"
         ;;
 esac
 
-    # Fetch release info
-    ASSET_URL=$(curl -s "$API_URL" | grep browser_download_url | cut -d '"' -f 4 | grep .zip | head -n 1)
+    # Fetch release info - with Linux-specific search and fallback to previous releases
+    ASSET_URL=$(find_asset_with_fallback "$OWNER" "$REPO" "$SELECTED_MODE")
 
     if [ -z "$ASSET_URL" ]; then
-        error_exit "No downloadable assets found in the release!"
+        error_exit "No Linux build found in any release! Tried latest and previous releases."
     fi
 
     # Download
