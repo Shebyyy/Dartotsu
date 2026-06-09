@@ -1,26 +1,14 @@
-#!/bin/bash
 set -e
 
-# =============================================================================
-# 🎯 DARTOTSU INSTALLER - Beautiful Terminal Experience
-# =============================================================================
-
-# Define application details
 OWNER='aayush2622'
 REPO='Dartotsu'
 APP_NAME='Dartotsu'
 
-# Installation paths
 INSTALL_DIR="$HOME/.local/share/$APP_NAME"
 LINK="$HOME/.local/bin/$APP_NAME"
 DESKTOP_FILE="$HOME/.local/share/applications/$APP_NAME.desktop"
 ICON_FILE="$HOME/.local/share/icons/$APP_NAME.png"
 
-# =============================================================================
-# 🎨 COLORS & STYLING
-# =============================================================================
-
-# Color codes
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -33,15 +21,13 @@ BOLD='\033[1m'
 DIM='\033[2m'
 RESET='\033[0m'
 
-# Dartotsu gradient colors (teal to cyan)
-GRAD1='\033[38;5;30m'   # Dark teal
-GRAD2='\033[38;5;36m'   # Medium teal
-GRAD3='\033[38;5;42m'   # Teal
-GRAD4='\033[38;5;48m'   # Light teal
-GRAD5='\033[38;5;51m'   # Cyan
-GRAD6='\033[38;5;87m'   # Bright cyan
+GRAD1='\033[38;5;30m'
+GRAD2='\033[38;5;36m'
+GRAD3='\033[38;5;42m'
+GRAD4='\033[38;5;48m'
+GRAD5='\033[38;5;51m'
+GRAD6='\033[38;5;87m'
 
-# Icons
 ICON_FIRE="🔥"
 ICON_LIGHTNING="⚡"
 ICON_STAR="⭐"
@@ -59,11 +45,6 @@ ICON_CROWN="👑"
 ICON_COMET="☄️"
 ICON_GALAXY="🌌"
 
-# =============================================================================
-# 🎭 ANIMATION & UI FUNCTIONS
-# =============================================================================
-
-# Spinner animation
 spinner() {
     local pid=$1
     local delay=0.1
@@ -78,7 +59,6 @@ spinner() {
     printf "    \b\b\b\b"
 }
 
-# Progress bar
 progress_bar() {
     local current=$1
     local total=$2
@@ -87,7 +67,6 @@ progress_bar() {
     local filled=$((current * width / total))
     local empty=$((width - filled))
 
-    # Color gradient based on progress
     local color=""
     if [ $percentage -lt 25 ]; then
         color="${RED}"
@@ -105,7 +84,6 @@ progress_bar() {
     printf "] ${BOLD}${color}%d%%${RESET} ${ICON_FIRE}" $percentage
 }
 
-# Compare commit SHAs between repos
 compare_commits() {
     local main_repo="aayush2622/Dartotsu"
     local alpha_repo="grayankit/Dartotsu-Downloader"
@@ -118,7 +96,6 @@ compare_commits() {
     done
     echo -e " ${GREEN}${ICON_LIGHTNING}${RESET}"
 
-    # Matrix-style loading
     echo -e "${GREEN}${DIM}> Accessing GitHub API...${RESET}"
     sleep 0.5
     echo -e "${GREEN}${DIM}> Scanning commit trees...${RESET}"
@@ -150,7 +127,6 @@ compare_commits() {
     echo -e "${BOLD}${PURPLE}║${RESET}   ${ICON_GHOST} Published: ${GRAY}$(date -d "$alpha_date" '+%Y-%m-%d %H:%M:%S UTC')${RESET}    ${PURPLE}${BOLD}║${RESET}"
     echo -e "${BOLD}${PURPLE}║${RESET}                                                         ${PURPLE}${BOLD}║${RESET}"
 
-    # Sync status with epic effects
     if [[ "$alpha_tag" == *"$main_commit"* ]]; then
         echo -e "${BOLD}${PURPLE}║${RESET}   ${ICON_MAGIC} SYNC STATUS: ${GREEN}${BOLD}${ICON_FIRE} PERFECTLY SYNCHRONIZED ${ICON_FIRE}${RESET}   ${PURPLE}${BOLD}║${RESET}"
         echo -e "${BOLD}${PURPLE}║${RESET}   ${GREEN}${ICON_LIGHTNING} Repositories are in perfect harmony! ${ICON_LIGHTNING}${RESET}           ${PURPLE}${BOLD}║${RESET}"
@@ -163,7 +139,6 @@ compare_commits() {
     echo -e "${BOLD}${PURPLE}╚═══════════════════════════════════════════════════════════════╝${RESET}"
     echo
 
-    # Cool countdown
     echo -ne "${BOLD}${CYAN}Preparing alpha download in: ${RESET}"
     for i in 3 2 1; do
         echo -ne "${RED}${BOLD}$i${RESET}"
@@ -174,7 +149,6 @@ compare_commits() {
     echo
 }
 
-# Animated text typing effect
 type_text() {
     local text="$1"
     local delay=${2:-0.03}
@@ -185,11 +159,9 @@ type_text() {
     echo
 }
 
-# Cool banner
 show_banner() {
     clear
     echo
-    # Animated border effect
     for i in {1..3}; do
         echo -e "${GRAD1}════════════════════════════════════════════════════════════════════════${RESET}"
         sleep 0.05
@@ -209,7 +181,6 @@ show_banner() {
     echo
 }
 
-# Stylized section headers
 section_header() {
     local title="$1"
     local icon="$2"
@@ -220,7 +191,6 @@ section_header() {
     echo
 }
 
-# Success message with animation
 success_msg() {
     local msg="$1"
     echo
@@ -230,7 +200,6 @@ success_msg() {
     echo
 }
 
-# Error message
 error_msg() {
     local msg="$1"
     echo
@@ -240,21 +209,17 @@ error_msg() {
     echo
 }
 
-# Info message
 info_msg() {
     local msg="$1"
     echo -e "${CYAN}${ICON_INFO}${RESET} ${msg}"
 }
 
-# Warning message
 warn_msg() {
     local msg="$1"
     echo -e "${YELLOW}${ICON_WARNING}${RESET} ${msg}"
 }
 
-# Stylized menu
 show_menu() {
-    # Glitch effect
     echo -e "${GRAD1}█${GRAD2}█${GRAD3}█${GRAD4}█${GRAD5}█${GRAD6}█${RESET} ${BOLD}DARTOTSU CONTROL PANEL${RESET} ${GRAD6}█${GRAD5}█${GRAD4}█${GRAD3}█${GRAD2}█${GRAD1}█${RESET}"
     echo
     echo -e "${BOLD}${CYAN}╔═══════════════════════════════════════════════════════╗${RESET}"
@@ -276,10 +241,8 @@ show_menu() {
     echo -ne "${BOLD}${WHITE}Enter the matrix${RESET} ${GRAY}(I/U/R/Q)${RESET} ${ICON_MAGIC}: "
 }
 
-# Version selection menu
 version_menu() {
     echo
-    # Animated title
     for char in "V" "E" "R" "S" "I" "O" "N" " " "S" "E" "L" "E" "C" "T" "I" "O" "N"; do
         echo -ne "${BOLD}${PURPLE}$char${RESET}"
         sleep 0.05
@@ -302,10 +265,6 @@ version_menu() {
     echo
     echo -ne "${BOLD}${WHITE}Choose your destiny${RESET} ${GRAY}(S/P/A)${RESET} ${ICON_MAGIC}: "
 }
-
-# =============================================================================
-# 🐚 SHELL ALIAS MANAGEMENT
-# =============================================================================
 
 detect_shell_rc() {
   local shell_name
@@ -352,40 +311,24 @@ add_updater_alias() {
   fi
 }
 
-
-
-
-# =============================================================================
-# 🛠️ ENHANCED DEPENDENCY MANAGEMENT
-# =============================================================================
-
-# Check if running in container/CI
 is_containerized() {
     [ -f /.dockerenv ] || [ -n "${CI:-}" ] || [ -n "${GITHUB_ACTIONS:-}" ]
 }
 
-# Enhanced dependency checking with better error handling
 check_dependencies() {
     local missing_deps=()
     local optional_deps=()
 
-    # Check command-line tools
     command -v curl >/dev/null 2>&1 || missing_deps+=("curl")
     command -v unzip >/dev/null 2>&1 || missing_deps+=("unzip")
     command -v wget >/dev/null 2>&1 || missing_deps+=("wget")
     command -v mpv >/dev/null 2>&1 || missing_deps+=("mpv")
 
-    # Check optional tools
     command -v git >/dev/null 2>&1 || optional_deps+=("git")
 
-    # Check libraries using pkg-config
     if command -v pkg-config >/dev/null 2>&1; then
-        # Check for GTK3 (required for GDK/display access)
         pkg-config --exists gtk+-3.0 2>/dev/null || missing_deps+=("gtk3")
 
-        # Check for WPE WebKit (new backend - replaces WebKit2GTK)
-        # The app now uses WPE WebKit for offscreen web rendering
-        # Try wpe-webkit-2.0 first (newer), then 1.1, then 1.0
         local has_wpe=false
         if pkg-config --exists wpe-webkit-2.0 2>/dev/null; then
             has_wpe=true
@@ -396,7 +339,6 @@ check_dependencies() {
         fi
 
         if [ "$has_wpe" = false ]; then
-            # Fallback: check if WebKit2GTK is available (for older pre-built releases)
             if pkg-config --exists webkit2gtk-4.1 2>/dev/null; then
                 info_msg "WPE WebKit not found, but WebKit2GTK 4.1 is available (legacy support)"
             elif pkg-config --exists libwebkit2gtk-4.1-0 2>/dev/null; then
@@ -406,11 +348,9 @@ check_dependencies() {
             fi
         fi
 
-        # Check for libwpe (WPE foundation library)
         if [ "$has_wpe" = true ]; then
             pkg-config --exists wpe-1.0 2>/dev/null || missing_deps+=("libwpe")
 
-            # Check for WPE Platform (preferred) or WPEBackend-FDO (legacy fallback)
             local has_wpe_backend=false
             if pkg-config --exists wpe-platform-2.0 2>/dev/null; then
                 has_wpe_backend=true
@@ -424,39 +364,31 @@ check_dependencies() {
             fi
         fi
 
-        # Check for libepoxy (OpenGL support - required by WPE backend)
         if [ "$has_wpe" = true ]; then
             pkg-config --exists epoxy 2>/dev/null || missing_deps+=("libepoxy")
         fi
 
-        # Check for wayland-server (required by WPE backend for SHM buffer handling)
         if [ "$has_wpe" = true ]; then
             pkg-config --exists wayland-server 2>/dev/null || missing_deps+=("wayland-server")
         fi
 
-        # Check for libmpv (required for video playback via media_kit)
         pkg-config --exists mpv 2>/dev/null || missing_deps+=("libmpv")
 
-        # Check for libsecret (credential/key storage - now required by inappwebview)
         pkg-config --exists libsecret-1 2>/dev/null || missing_deps+=("libsecret")
 
-        # Check for libass (subtitle rendering)
         pkg-config --exists libass 2>/dev/null || optional_deps+=("libass")
     else
         missing_deps+=("pkg-config" "gtk3" "wpewebkit" "libmpv" "libsecret")
     fi
 
-    # Check for xdg-open (URL launching via url_launcher)
     if ! command -v xdg-open >/dev/null 2>&1; then
         optional_deps+=("xdg-utils")
     fi
 
-    # Check for fuse (AppImage support)
     if [ ! -e /dev/fuse ] && ! command -v fusermount >/dev/null 2>&1; then
         optional_deps+=("fuse")
     fi
 
-    # Report missing dependencies
     if [ ${#missing_deps[@]} -ne 0 ]; then
         warn_msg "Missing required dependencies: ${missing_deps[*]}"
 
@@ -488,20 +420,17 @@ check_dependencies() {
     fi
 }
 
-# Enhanced package installation with better error recovery
 install_packages() {
     local deps=("$@")
     local install_cmd=""
     local update_cmd=""
     local distro=""
 
-    # Detect distribution and package manager
     if command -v apt >/dev/null 2>&1; then
         distro="debian"
         update_cmd="sudo apt update -y"
         install_cmd="sudo apt install -y"
 
-        # Map library names to Ubuntu/Debian package names
         deps=("${deps[@]/webkit2gtk/libwebkit2gtk-4.1-0}")
         deps=("${deps[@]/gtk3/libgtk-3-dev}")
         deps=("${deps[@]/pkg-config/pkg-config}")
@@ -510,7 +439,6 @@ install_packages() {
         deps=("${deps[@]/libass/libass-dev}")
         deps=("${deps[@]/xdg-utils/xdg-utils}")
         deps=("${deps[@]/fuse/fuse3}")
-        # WPE WebKit packages (new - replaces WebKit2GTK for webview)
         deps=("${deps[@]/wpewebkit/libwpewebkit-2.0-dev}")
         deps=("${deps[@]/libwpe/libwpe-1.0-dev}")
         deps=("${deps[@]/wpebackend/wpebackend-fdo-1.0-dev}")
@@ -521,7 +449,6 @@ install_packages() {
         distro="fedora"
         install_cmd="sudo dnf install -y"
 
-        # Map library names to Fedora package names
         deps=("${deps[@]/webkit2gtk/webkit2gtk4.1-0}")
         deps=("${deps[@]/gtk3/gtk3-devel}")
         deps=("${deps[@]/pkg-config/pkgconf-devel}")
@@ -530,7 +457,6 @@ install_packages() {
         deps=("${deps[@]/libass/libass-devel}")
         deps=("${deps[@]/xdg-utils/xdg-utils}")
         deps=("${deps[@]/fuse/fuse3}")
-        # WPE WebKit packages
         deps=("${deps[@]/wpewebkit/wpewebkit-devel}")
         deps=("${deps[@]/libwpe/libwpe-devel}")
         deps=("${deps[@]/wpebackend/wpebackend-fdo-devel}")
@@ -542,7 +468,6 @@ install_packages() {
         update_cmd="sudo pacman -Sy"
         install_cmd="sudo pacman -S --noconfirm"
 
-        # Map library names to Arch package names
         deps=("${deps[@]/webkit2gtk/webkit2gtk-4.1}")
         deps=("${deps[@]/gtk3/gtk3}")
         deps=("${deps[@]/pkg-config/pkgconf}")
@@ -551,7 +476,6 @@ install_packages() {
         deps=("${deps[@]/libass/libass}")
         deps=("${deps[@]/xdg-utils/xdg-utils}")
         deps=("${deps[@]/fuse/fuse3}")
-        # WPE WebKit packages
         deps=("${deps[@]/wpewebkit/wpewebkit}")
         deps=("${deps[@]/libwpe/libwpe}")
         deps=("${deps[@]/wpebackend/wpebackend-fdo}")
@@ -562,7 +486,6 @@ install_packages() {
         distro="opensuse"
         install_cmd="sudo zypper install -y"
 
-        # Map library names to openSUSE package names
         deps=("${deps[@]/webkit2gtk/webkit2gtk3-devel}")
         deps=("${deps[@]/gtk3/gtk3-devel}")
         deps=("${deps[@]/pkg-config/pkg-config}")
@@ -571,7 +494,6 @@ install_packages() {
         deps=("${deps[@]/libass/libass-devel}")
         deps=("${deps[@]/xdg-utils/xdg-utils}")
         deps=("${deps[@]/fuse/fuse3}")
-        # WPE WebKit packages
         deps=("${deps[@]/wpewebkit/wpewebkit-devel}")
         deps=("${deps[@]/libwpe/libwpe-devel}")
         deps=("${deps[@]/wpebackend/wpebackend-fdo-devel}")
@@ -582,8 +504,7 @@ install_packages() {
         distro="macos"
         install_cmd="brew install"
 
-        # Map library names to Homebrew package names
-        deps=("${deps[@]/webkit2gtk/}")  # Remove webkit2gtk for macOS
+        deps=("${deps[@]/webkit2gtk/}")
         deps=("${deps[@]/gtk3/gtk+3}")
         deps=("${deps[@]/pkg-config/pkg-config}")
         deps=("${deps[@]/libmpv/mpv}")
@@ -591,7 +512,6 @@ install_packages() {
         deps=("${deps[@]/libass/libass}")
         deps=("${deps[@]/xdg-utils/}")
         deps=("${deps[@]/fuse/}")
-        # WPE WebKit packages (not needed on macOS)
         deps=("${deps[@]/wpewebkit/}")
         deps=("${deps[@]/libwpe/}")
         deps=("${deps[@]/wpebackend/}")
@@ -602,7 +522,6 @@ install_packages() {
         error_exit "No supported package manager found! Please install manually: ${deps[*]}"
     fi
 
-    # Filter out empty elements
     local filtered_deps=()
     for dep in "${deps[@]}"; do
         [[ -n "$dep" ]] && filtered_deps+=("$dep")
@@ -617,7 +536,6 @@ install_packages() {
     info_msg "Detected system: $distro"
     info_msg "Installing packages: ${deps[*]}"
 
-    # Update package lists if needed
     if [ -n "$update_cmd" ]; then
         echo -ne "${CYAN}${ICON_INSTALL}${RESET} Updating package lists..."
         if eval "$update_cmd" >/dev/null 2>&1; then
@@ -627,7 +545,6 @@ install_packages() {
         fi
     fi
 
-    # Install packages
     echo -ne "${CYAN}${ICON_INSTALL}${RESET} Installing dependencies..."
 
     if eval "$install_cmd ${deps[*]}" >/dev/null 2>&1; then
@@ -636,7 +553,6 @@ install_packages() {
     else
         echo -e " ${RED}${ICON_ERROR} Failed!${RESET}"
 
-        # Try installing packages individually to identify problematic ones
         warn_msg "Attempting to install packages individually..."
         local failed_packages=()
 
@@ -656,7 +572,6 @@ install_packages() {
     fi
 }
 
-# Verify installation of critical dependencies
 verify_installation() {
     local critical_deps=("curl" "unzip" "wget")
     local failed_deps=()
@@ -671,9 +586,7 @@ verify_installation() {
         error_exit "Critical dependencies still missing after installation: ${failed_deps[*]}"
     fi
 
-    # Verify library installations
     if command -v pkg-config >/dev/null 2>&1; then
-        # Check for WPE WebKit or WebKit2GTK (at least one must be present)
         local has_webview=false
         if pkg-config --exists wpe-webkit-2.0 2>/dev/null || \
            pkg-config --exists wpe-webkit-1.1 2>/dev/null || \
@@ -701,7 +614,6 @@ verify_installation() {
         fi
     fi
 
-    # Verify mpv runtime is available
     if ! command -v mpv >/dev/null 2>&1; then
         warn_msg "mpv not found - media playback features may be limited"
     fi
@@ -709,14 +621,6 @@ verify_installation() {
     info_msg "Installation verification completed!"
 }
 
-# =============================================================================
-# 🔍 FIND LINUX ZIP IN RELEASES (with fallback to previous releases)
-# =============================================================================
-
-# Search for a Linux zip asset across releases, starting from the latest
-# and falling back to previous releases if the latest doesn't have one.
-# Usage: find_linux_zip_asset <owner> <repo> [max_pages]
-# Returns: the browser_download_url of the linux zip asset (or empty)
 find_linux_zip_asset() {
     local _owner="$1"
     local _repo="$2"
@@ -729,12 +633,10 @@ find_linux_zip_asset() {
         local _response
         _response=$(curl -s "$_api_url")
 
-        # Stop if no more releases (empty array or API error)
         if [ -z "$_response" ] || echo "$_response" | grep -q '"message"'; then
             break
         fi
 
-        # Check how many releases are on this page
         local _release_count
         _release_count=$(echo "$_response" | grep -c '"tag_name"' || true)
 
@@ -742,17 +644,13 @@ find_linux_zip_asset() {
             break
         fi
 
-        # Get all tag names in order
         local _tags
         _tags=$(echo "$_response" | grep '"tag_name"' | cut -d '"' -f 4)
 
-        # Get all browser_download_urls for linux zips
-        # Matches: Dartotsu_linux.zip, Dartotsu_LinuxZip_*.zip, Dartotsu_Linux_*.zip, etc.
         local _linux_urls
         _linux_urls=$(echo "$_response" | grep '"browser_download_url"' | cut -d '"' -f 4 | grep -i 'linux.*\.zip\|linuxzip\|_linux_\?\.zip')
 
         if [ -n "$_linux_urls" ]; then
-            # Found at least one linux zip on this page - take the first one (newest release)
             local _found_url
             _found_url=$(echo "$_linux_urls" | head -n 1)
             local _found_tag
@@ -762,43 +660,34 @@ find_linux_zip_asset() {
             return 0
         fi
 
-        # No linux zip on this page - inform and continue to next page
         warn_msg "No Linux build found on page ${_page}, checking previous releases..."
     done
 
-    # Nothing found after all pages
     echo ""
     return 1
 }
 
-# Smarter asset finder: looks specifically for Linux zip, falls back through releases
-# Works for both alpha repo and main repo
 find_asset_with_fallback() {
     local _owner="$1"
     local _repo="$2"
-    local _mode="$3"  # "latest", "prerelease", or "alpha"
+    local _mode="$3"
     local _asset_url=""
 
     case "$_mode" in
         alpha)
-            # For alpha: fetch all releases and search for linux.zip from newest to oldest
             _asset_url=$(find_linux_zip_asset "$_owner" "$_repo" 5)
             ;;
         latest|prerelease|"")
-            # For stable/pre-release: first try the latest, then fall back if no linux zip
             local _api_url="https://api.github.com/repos/${_owner}/${_repo}/releases/latest"
             if [ "$_mode" = "prerelease" ]; then
-                # For prerelease, get all releases and pick the first one (which is newest)
                 _api_url="https://api.github.com/repos/${_owner}/${_repo}/releases?per_page=1"
             fi
 
             local _response
             _response=$(curl -s "$_api_url")
 
-            # Try to find linux zip in the latest release first
             _asset_url=$(echo "$_response" | grep '"browser_download_url"' | cut -d '"' -f 4 | grep -i 'linux.*\.zip\|linuxzip\|_linux_\?\.zip' | head -n 1)
 
-            # If no linux zip in latest, fall back through previous releases
             if [ -z "$_asset_url" ]; then
                 warn_msg "Latest release has no Linux build, checking previous releases..."
                 _asset_url=$(find_linux_zip_asset "$_owner" "$_repo" 5)
@@ -808,10 +697,6 @@ find_asset_with_fallback() {
 
     echo "$_asset_url"
 }
-
-# =============================================================================
-# 🛠️  CORE FUNCTIONS
-# =============================================================================
 
 error_exit() {
     error_msg "$1"
@@ -827,7 +712,6 @@ download_with_progress() {
 
     echo -ne "${CYAN}${ICON_DOWNLOAD}${RESET} Downloading ${BOLD}${filename}${RESET}..."
 
-    # Download in background and show spinner
     curl -sL "$url" -o "$output" &
     local curl_pid=$!
     spinner $curl_pid
@@ -845,14 +729,12 @@ download_with_progress() {
 install_app() {
     section_header "INSTALLATION PROCESS" "${ICON_INSTALL}"
 
-    # Check dependencies with enhanced system
     info_msg "Checking system dependencies..."
     check_dependencies
     verify_installation
     echo -e "  ${GREEN}${ICON_SUCCESS} All dependencies verified!${RESET}"
     echo
 
-    # Version selection
     version_menu
     read -rn 1 ANSWER
     echo
@@ -880,20 +762,17 @@ case "${ANSWER,,}" in
         ;;
 esac
 
-    # Fetch release info - with Linux-specific search and fallback to previous releases
     ASSET_URL=$(find_asset_with_fallback "$OWNER" "$REPO" "$SELECTED_MODE")
 
     if [ -z "$ASSET_URL" ]; then
         error_exit "No Linux build found in any release! Tried latest and previous releases."
     fi
 
-    # Download
     echo
     if ! download_with_progress "$ASSET_URL" "/tmp/$APP_NAME.zip"; then
         error_exit "Download failed!"
     fi
 
-    # Installation
     echo
     info_msg "Installing to ${BOLD}$INSTALL_DIR${RESET}..."
 
@@ -912,7 +791,6 @@ esac
         error_exit "Failed to extract application files!"
     fi
 
-    # Find executable
     APP_EXECUTABLE="$(find "$INSTALL_DIR" -type f -executable -print -quit)"
     if [ -z "$APP_EXECUTABLE" ]; then
         error_exit "No executable found in the extracted files!"
@@ -920,11 +798,9 @@ esac
 
     chmod +x "$APP_EXECUTABLE"
 
-    # Create symlink
     mkdir -p "$HOME/.local/bin"
     ln -sf "$APP_EXECUTABLE" "$LINK"
 
-    # Install icon
     echo -ne "${CYAN}${ICON_DOWNLOAD}${RESET} Installing icon..."
     mkdir -p "$(dirname "$ICON_FILE")"
     fallback_icon_url='https://raw.githubusercontent.com/aayush2622/Dartotsu/main/assets/images/logo.png'
@@ -934,7 +810,6 @@ esac
         echo -e " ${YELLOW}${ICON_WARNING} Icon download failed (non-critical)${RESET}"
     fi
 
-    # Create desktop entry
     echo -ne "${CYAN}${ICON_INSTALL}${RESET} Creating desktop entry..."
     mkdir -p "$(dirname "$DESKTOP_FILE")"
     cat > "$DESKTOP_FILE" <<EOL
@@ -954,10 +829,8 @@ EOL
     fi
     echo -e " ${GREEN}${ICON_SUCCESS} Done!${RESET}"
 
-    # Create shell alias for easy updates
     add_updater_alias
 
-    # Cleanup
     rm -f "/tmp/$APP_NAME.zip"
 
     echo
@@ -995,7 +868,6 @@ uninstall_app() {
     echo
     info_msg "Removing $APP_NAME components..."
 
-    # Remove components
     [ -L "$LINK" ] && rm -f "$LINK" && echo -e "  ${GREEN}✓${RESET} Executable symlink removed"
     [ -d "$INSTALL_DIR" ] && rm -rf "$INSTALL_DIR" && echo -e "  ${GREEN}✓${RESET} Installation directory removed"
     [ -f "$DESKTOP_FILE" ] && rm -f "$DESKTOP_FILE" && echo -e "  ${GREEN}✓${RESET} Desktop entry removed"
@@ -1035,13 +907,8 @@ update_app() {
     echo
     install_app
 
-    # Ensure alias is still present after update
     add_updater_alias
 }
-
-# =============================================================================
-# 🚀 MAIN SCRIPT
-# =============================================================================
 
 main_loop() {
     while true; do
@@ -1076,9 +943,7 @@ main_loop() {
     done
 }
 
-# Check if running in interactive mode
 if [ $# -gt 0 ]; then
-    # Non-interactive mode - handle command line arguments
     ACTION="$1"
     case "${ACTION,,}" in
         install)
@@ -1101,9 +966,7 @@ if [ $# -gt 0 ]; then
             ;;
     esac
 elif [ -t 0 ]; then
-    # Interactive mode - show menu
     main_loop
 else
-    # Fallback to interactive mode
     main_loop
 fi
